@@ -10,7 +10,6 @@ def home():
 def rooms_page():
     return render_template("rooms.html")
 
-
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
