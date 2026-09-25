@@ -50,7 +50,7 @@ From the repository root:
 python -m pytest
 ```
 
-The current suite contains five shared-error tests in `tests/test_errors.py`. They register the handlers on temporary Flask test apps; they do not verify that the real app in `app.py` registers those handlers. Tests for the database and Rooms, Employees, Bookings, Reports, and their business rules still need to be added.
+The current suite contains six focused shared-error tests in `tests/test_errors.py`. It checks the 400/404/409 exceptions, API 404 and page 404 behavior on the real app, and preservation of the `Allow` header on a 405 response. The exception and 405 checks use small test apps. Tests for the database, feature routes, and business rules still need to be added.
 
 ## API contract and errors
 
@@ -60,7 +60,7 @@ The authoritative endpoint, request, response, schema, validation, and status-co
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Flask-generated API errors should use the same JSON envelope; ordinary page errors should remain HTML. The handlers exist, but `app.py` does not yet register them.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The feature API routes are still to be wired.
 
 ## Team responsibilities
 
@@ -86,15 +86,15 @@ Each student owns their feature end to end: service rules, API, page, and tests.
 
 | Area | Present | Still needed |
 |---|---|---|
-| Flask app | `app.py` serves `/health`, redirects `/` to `/rooms`, and renders the placeholder Rooms page. | Register shared error handlers and wire the feature routes into this app. |
+| Flask app | `app.py` registers shared error handlers, serves `/health`, redirects `/` to `/rooms`, and renders the placeholder Rooms page. | Wire the feature routes into this app. |
 | Service layer | `backend/services.py` has shared create/list/detail, booking, cancellation, and report functions. | Integrate them with routes and add automated coverage for their rules. |
 | API | The contract is documented in `docs/api.md`. | The ten required API operations are not wired to Flask routes yet. |
 | Database | The SQLite schema is documented in `docs/api.md`. | Add runnable connection/initialization support, enable foreign keys on each connection, and add a seed script. |
 | Pages | A base template, stylesheet, and placeholder Rooms page exist. | Implement Rooms, Employees, and Bookings pages. The base template's notice class names do not currently match the stylesheet, so message styling also needs repair. |
-| Tests | Five isolated shared-error-handler tests exist. | Test the real app's error handling, database setup, every required business rule, and API behavior. |
+| Tests | Six focused shared-error tests cover exception statuses, real-app API/page 404s, and the 405 `Allow` header. | Add database, feature-route, and business-rule tests. |
 
 The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
 ## Known limitations
 
-A clean clone cannot yet complete the browser acceptance flow. The app has no registered shared error handlers, runnable database setup, or seed data; the required API routes and feature pages are still being integrated. GitHub branch protection must also be configured separately; the written workflow rules do not enforce it.
+A clean clone cannot yet complete the browser acceptance flow. Runnable database setup and seed data, the required API routes, and the feature pages are still missing. The base template's notice classes also need to be matched with the stylesheet. GitHub branch protection must be configured separately; the written workflow rules do not enforce it.
