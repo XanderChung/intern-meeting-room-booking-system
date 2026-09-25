@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Meeting Room Booking{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>Meeting Room Booking</h1>
+        <nav>
+            <a href="/rooms">Rooms</a>
+            <a href="/employees">Employees</a>
+            <a href="/bookings">Bookings</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
