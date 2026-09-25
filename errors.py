@@ -54,10 +54,15 @@ def register_error_handlers(app) -> None:
         if not _is_api_request():
             return error
 
+        response = error.get_response()
+
         if error.code == 404:
             message = "The requested API endpoint was not found."
         elif error.code == 405:
             message = "Method not allowed for this API endpoint."
         else:
             message = error.description
-        return jsonify(error=message), error.code or 500
+
+        response.set_data(app.json.dumps({"error": message}))
+        response.content_type = "application/json"
+        return response

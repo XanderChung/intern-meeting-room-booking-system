@@ -1,6 +1,8 @@
 from flask import Flask, redirect, render_template, url_for
+from errors import register_error_handlers
 
 app = Flask(__name__)
+register_error_handlers(app)
 
 @app.get("/")
 def home():
