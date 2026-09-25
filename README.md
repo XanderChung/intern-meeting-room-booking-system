@@ -50,7 +50,7 @@ From the repository root:
 python -m pytest
 ```
 
-The current suite contains six focused shared-error tests in `tests/test_errors.py`. It checks the 400/404/409 exceptions, API 404 and page 404 behavior on the real app, and preservation of the `Allow` header on a 405 response. The exception and 405 checks use small test apps. Tests for the database, feature routes, and business rules still need to be added.
+The current suite contains six focused shared-error tests in `tests/test_errors.py` and a timezone test in `tests/test_timezone.py`. The error tests cover 400/404/409 exceptions, API 404 and page 404 behavior on the real app, and preservation of the `Allow` header on a 405 response. The timezone test simulates a UTC device clock and checks that services request `Asia/Jakarta`. Tests for the database, feature routes, and business rules still need to be added.
 
 ## API contract and errors
 
@@ -91,7 +91,7 @@ Each student owns their feature end to end: service rules, API, page, and tests.
 | API | The contract is documented in `docs/api.md`. | The ten required API operations are not wired to Flask routes yet. |
 | Database | The SQLite schema is documented in `docs/api.md`. | Add runnable connection/initialization support, enable foreign keys on each connection, and add a seed script. |
 | Pages | A base template, stylesheet, and placeholder Rooms page exist. | Implement Rooms, Employees, and Bookings pages. The base template's notice class names do not currently match the stylesheet, so message styling also needs repair. |
-| Tests | Six focused shared-error tests cover exception statuses, real-app API/page 404s, and the 405 `Allow` header. | Add database, feature-route, and business-rule tests. |
+| Tests | Six focused shared-error tests cover exception statuses and real-app API/page errors; one timezone test checks the default Jakarta clock. | Add database, feature-route, and business-rule tests. |
 
 The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
