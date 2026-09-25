@@ -47,3 +47,27 @@ def test_rule_violation_returns_409():
     assert response.get_json() == {
         "error": "This room is already booked."
     }
+
+def test_unknown_api_route_returns_json_404():
+    test_app = Flask(__name__)
+    test_app.config["TESTING"] = True
+    register_error_handlers(test_app)
+
+    response = test_app.test_client().get("/api/does-not-exist")
+
+    assert response.status_code == 404
+    assert response.is_json
+    assert response.get_json() == {
+        "error": "The requested API endpoint was not found."
+    }
+
+
+def test_unknown_page_keeps_html_404():
+    test_app = Flask(__name__)
+    test_app.config["TESTING"] = True
+    register_error_handlers(test_app)
+
+    response = test_app.test_client().get("/does-not-exist")
+
+    assert response.status_code == 404
+    assert response.mimetype == "text/html"
