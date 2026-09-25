@@ -5,7 +5,6 @@ import os
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
-    "dev-only-change-me",
 )
 register_error_handlers(app)
 
