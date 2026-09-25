@@ -8,6 +8,7 @@ Write services own their transaction and require an idle SQLite connection.
 import re
 import sqlite3
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from errors import InvalidInputError, NotFoundError, RuleViolationError
 
@@ -15,6 +16,7 @@ from errors import InvalidInputError, NotFoundError, RuleViolationError
 _DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
 _DATETIME_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\Z")
 _DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}\Z")
+OFFICE_TIMEZONE = ZoneInfo("Asia/Jakarta")
 
 
 def _is_blank(value) -> bool:
@@ -22,10 +24,21 @@ def _is_blank(value) -> bool:
 
 
 def _now(office_now: datetime = None) -> datetime:
-    """Return a naive datetime in the office's local timezone."""
-    value = datetime.now() if office_now is None else office_now
+    """Return a naive datetime representing Asia/Jakarta office-local time.
+
+    The default clock is derived from the configured IANA timezone rather than
+    the computer's local timezone. Injected values are naive Asia/Jakarta wall
+    times so callers can freeze the clock in tests.
+    """
+    value = (
+        datetime.now(OFFICE_TIMEZONE).replace(tzinfo=None)
+        if office_now is None
+        else office_now
+    )
     if not isinstance(value, datetime) or value.tzinfo is not None:
-        raise InvalidInputError("Office time must be a local, timezone-naive datetime.")
+        raise InvalidInputError(
+            "Office time must be a timezone-naive Asia/Jakarta datetime."
+        )
     return value
 
 
