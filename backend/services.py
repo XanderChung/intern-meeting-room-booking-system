@@ -1,9 +1,13 @@
+"""Centralized business rules and validation logic.
+
+Both API endpoints and HTML routes must call these functions to enforce rules.
 """
-services.py
-Centralized business rules and validation logic.
-Both API endpoints and HTML routes MUST call these functions to enforce rules.
-"""
+import re
 from datetime import datetime, time
+
+
+_DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
+_DATETIME_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\Z")
 
 
 # ==========================================
@@ -11,29 +15,70 @@ from datetime import datetime, time
 # ==========================================
 
 class ConflictError(Exception):
-    """
-    Raised when a request conflicts with existing state.
-    The API layer must map this exception to HTTP status code 409.
-    """
-    pass
+    """Raised when a request conflicts with an existing rule or state (HTTP 409)."""
+
+
+class NotFoundError(Exception):
+    """Raised when a requested room, employee, or booking does not exist (HTTP 404)."""
+
+
+def _parse_datetime(value: str) -> datetime:
+    """Parse the contract's exact YYYY-MM-DDTHH:MM local-time format."""
+    if not isinstance(value, str) or not _DATETIME_PATTERN.fullmatch(value):
+        raise ValueError("Date and time must use YYYY-MM-DDTHH:MM format.")
+
+    try:
+        return datetime.strptime(value, _DATETIME_FORMAT)
+    except ValueError as exc:
+        raise ValueError("Date and time must be a valid YYYY-MM-DDTHH:MM value.") from exc
+
+
+def _is_blank(value) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
 
 
 # ==========================================
 # ROOM & EMPLOYEE RULES
 # ==========================================
 
+def validate_room(name: str, floor, capacity: int, db_connection) -> bool:
+    """Validate the required room fields, minimum capacity, and unique name."""
+    if _is_blank(name):
+        raise ValueError("Room name is required.")
+    if _is_blank(floor):
+        raise ValueError("Room floor is required.")
+    if capacity is None or capacity == "":
+        raise ValueError("Room capacity is required.")
+    if isinstance(capacity, bool) or not isinstance(capacity, int) or capacity < 1:
+        raise ValueError("Room capacity must be an integer of at least 1.")
+
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT id FROM rooms WHERE name = ?", (name,))
+    if cursor.fetchone():
+        raise ConflictError(f"A room named '{name}' already exists.")
+
+    return True
+
+
+def validate_employee(name: str, email: str, department: str, db_connection) -> bool:
+    """Validate required employee fields and the unique, valid email address."""
+    if _is_blank(name):
+        raise ValueError("Employee name is required.")
+    if _is_blank(department):
+        raise ValueError("Employee department is required.")
+
+    return validate_employee_email(email, db_connection)
+
+
 def validate_employee_email(email: str, db_connection) -> bool:
-    """
-    Validates that an email contains an '@' symbol and is strictly unique in the database[cite: 2].
-    Raises a ValueError if invalid or a ConflictError if it already exists[cite: 2].
-    """
-    if not email or "@" not in email:
-        raise ValueError("Invalid email format: must contain '@'[cite: 2].")
+    """Require an email containing '@' and reject duplicates."""
+    if not isinstance(email, str) or not email or "@" not in email:
+        raise ValueError("Invalid email format: must contain '@'.")
 
     cursor = db_connection.cursor()
     cursor.execute("SELECT id FROM employees WHERE email = ?", (email,))
     if cursor.fetchone():
-        raise ConflictError(f"An employee with email '{email}' already exists[cite: 2].")
+        raise ConflictError(f"An employee with email '{email}' already exists.")
 
     return True
 
@@ -42,84 +87,101 @@ def validate_employee_email(email: str, db_connection) -> bool:
 # BOOKING RULES
 # ==========================================
 
+def validate_booking_fields(room_id, employee_id, title, start_at, end_at, attendees) -> bool:
+    """Require the fields used to create a booking."""
+    required = {
+        "room_id": room_id,
+        "employee_id": employee_id,
+        "title": title,
+        "start_at": start_at,
+        "end_at": end_at,
+        "attendees": attendees,
+    }
+    missing = [field for field, value in required.items() if _is_blank(value)]
+    if missing:
+        raise ValueError(f"Missing required booking fields: {', '.join(missing)}.")
+
+    return True
+
+
+def validate_booking_references(room_id: int, employee_id: int, db_connection) -> bool:
+    """Ensure the room and employee referenced by a booking exist."""
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT id FROM rooms WHERE id = ?", (room_id,))
+    if cursor.fetchone() is None:
+        raise NotFoundError(f"Room {room_id} does not exist.")
+
+    cursor.execute("SELECT id FROM employees WHERE id = ?", (employee_id,))
+    if cursor.fetchone() is None:
+        raise NotFoundError(f"Employee {employee_id} does not exist.")
+
+    return True
+
+
 def check_capacity(attendees: int, room_capacity: int) -> bool:
-    """
-    Ensures attendees are between 1 and the room's maximum capacity[cite: 2].
-    Raises a ValueError if rules are violated[cite: 2].
-    """
-    if attendees < 1:
-        raise ValueError("Attendee count must be at least 1[cite: 2].")
+    """Require attendee count to be between 1 and the room's capacity."""
+    if isinstance(attendees, bool) or not isinstance(attendees, int) or attendees < 1:
+        raise ValueError("Attendee count must be an integer of at least 1.")
     if attendees > room_capacity:
-        raise ValueError(f"Attendee count ({attendees}) exceeds room capacity ({room_capacity})[cite: 2].")
-    
+        raise ConflictError(
+            f"Attendee count ({attendees}) exceeds room capacity ({room_capacity})."
+        )
+
     return True
 
 
 def check_time_range(start_at: str, end_at: str) -> bool:
-    """
-    Ensures start_at is strictly before end_at, and the booking lasts at most 4 hours[cite: 2].
-    Both inputs are ISO 8601 strings (YYYY-MM-DDTHH:MM)[cite: 2].
-    Raises a ValueError if violated[cite: 2].
-    """
-    start_dt = datetime.fromisoformat(start_at)
-    end_dt = datetime.fromisoformat(end_at)
+    """Require start before end and a duration of no more than four hours."""
+    start_dt = _parse_datetime(start_at)
+    end_dt = _parse_datetime(end_at)
 
     if start_dt >= end_dt:
-        raise ValueError("Booking start time must be strictly before end time[cite: 2].")
+        raise ValueError("Booking start time must be before end time.")
 
-    duration_seconds = (end_dt - start_dt).total_seconds()
-    if duration_seconds > 4 * 3600:
-        raise ValueError("Booking duration cannot exceed 4 hours[cite: 2].")
+    if (end_dt - start_dt).total_seconds() > 4 * 3600:
+        raise ValueError("Booking duration cannot exceed 4 hours.")
 
     return True
 
 
 def check_office_hours(start_at: str, end_at: str) -> bool:
-    """
-    Ensures the booking starts and ends on the exact same day, strictly between 08:00 and 18:00[cite: 2].
-    Allows bookings to end at exactly 18:00[cite: 2].
-    Raises a ValueError if outside office hours[cite: 2].
-    """
-    start_dt = datetime.fromisoformat(start_at)
-    end_dt = datetime.fromisoformat(end_at)
+    """Require a same-day booking from 08:00 through 18:00, inclusive."""
+    start_dt = _parse_datetime(start_at)
+    end_dt = _parse_datetime(end_at)
 
     if start_dt.date() != end_dt.date():
-        raise ValueError("Bookings must start and end on the exact same day[cite: 2].")
+        raise ConflictError("Bookings must start and end on the same day.")
 
-    office_start = time(8, 0)
-    office_end = time(18, 0)
-
-    if start_dt.time() < office_start:
-        raise ValueError(f"Booking start time ({start_dt.time().strftime('%H:%M')}) cannot be before 08:00[cite: 2].")
-
-    if end_dt.time() > office_end:
-        raise ValueError(f"Booking end time ({end_dt.time().strftime('%H:%M')}) cannot be after 18:00[cite: 2].")
+    if start_dt.time() < time(8, 0) or end_dt.time() > time(18, 0):
+        raise ConflictError("Bookings must be within office hours (08:00–18:00).")
 
     return True
 
 
-def check_future_booking(start_at: str) -> bool:
+def check_future_booking(start_at: str, office_now: datetime = None) -> bool:
+    """Require a future start time using the office's local clock.
+
+    Pass `office_now` when the server's local timezone is not the office timezone.
     """
-    Ensures the start_at time is in the future compared to the server's current local time[cite: 2].
-    Raises a ValueError if in the past[cite: 2].
-    """
-    start_dt = datetime.fromisoformat(start_at)
-    if start_dt <= datetime.now():
-        raise ValueError("Booking start time must be in the future[cite: 2].")
+    start_dt = _parse_datetime(start_at)
+    now = office_now if office_now is not None else datetime.now()
+
+    if start_dt <= now:
+        raise ConflictError("Booking start time must be in the future.")
 
     return True
 
 
 def check_booking_overlap(room_id: int, start_at: str, end_at: str, db_connection) -> bool:
-    """
-    Checks the database to ensure a room does not have two active (non-cancelled) 
-    bookings at the same time[cite: 2]. 
-    Back-to-back bookings (e.g., 10:00-11:00 and 11:00-12:00) DO NOT overlap[cite: 2].
-    Raises a ConflictError if an overlap is detected[cite: 2].
-    """
+    """Reject overlapping active bookings; back-to-back bookings are allowed."""
+    # Parse first so only contract-format local timestamps reach the SQL comparison.
+    start_dt = _parse_datetime(start_at)
+    end_dt = _parse_datetime(end_at)
+    if start_dt >= end_dt:
+        raise ValueError("Booking start time must be before end time.")
+
     cursor = db_connection.cursor()
-    # Overlap formula: existing_start < new_end AND existing_end > new_start
-    # Matches non-cancelled bookings where cancelled_at IS NULL
+    # Half-open interval check: touching endpoints are not overlaps.
     query = """
         SELECT id FROM bookings
         WHERE room_id = ?
@@ -129,31 +191,31 @@ def check_booking_overlap(room_id: int, start_at: str, end_at: str, db_connectio
     """
     cursor.execute(query, (room_id, end_at, start_at))
     if cursor.fetchone():
-        raise ConflictError(f"Room {room_id} is already booked for the selected time slot[cite: 2].")
+        raise ConflictError(f"Room {room_id} is already booked for that time slot.")
 
     return True
 
 
-def check_cancel_validity(booking_id: int, db_connection) -> bool:
-    """
-    Ensures a booking can be cancelled[cite: 2]. It must be rejected if the booking 
-    has already started, or if it was already cancelled previously[cite: 2].
-    Raises a ValueError or ConflictError if invalid[cite: 2].
-    """
+def check_cancel_validity(
+    booking_id: int, db_connection, office_now: datetime = None
+) -> bool:
+    """Reject missing, already-cancelled, or already-started bookings."""
     cursor = db_connection.cursor()
-    cursor.execute("SELECT start_at, cancelled_at FROM bookings WHERE id = ?", (booking_id,))
+    cursor.execute(
+        "SELECT start_at, cancelled_at FROM bookings WHERE id = ?", (booking_id,)
+    )
     booking = cursor.fetchone()
 
-    if not booking:
-        raise ValueError(f"Booking with ID {booking_id} does not exist.")
+    if booking is None:
+        raise NotFoundError(f"Booking {booking_id} does not exist.")
 
     start_at_str, cancelled_at = booking
-
     if cancelled_at is not None:
-        raise ConflictError(f"Booking {booking_id} has already been cancelled[cite: 2].")
+        raise ConflictError(f"Booking {booking_id} has already been cancelled.")
 
-    start_dt = datetime.fromisoformat(start_at_str)
-    if datetime.now() >= start_dt:
-        raise ValueError("Cannot cancel a booking that has already started or passed[cite: 2].")
+    start_dt = _parse_datetime(start_at_str)
+    now = office_now if office_now is not None else datetime.now()
+    if now >= start_dt:
+        raise ConflictError("Cannot cancel a booking that has already started.")
 
     return True
