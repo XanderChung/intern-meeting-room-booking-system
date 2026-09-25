@@ -1,110 +1,100 @@
 # Meeting Room Booking System
 
-A student group project for managing meeting rooms, employees, and room bookings.
+A student team project for managing meeting rooms, employees, and room bookings. The project is still under development.
 
-This project is under development. The current backend foundation provides a health-check endpoint and shared API error handling.
+## Agreed stack and architecture
 
-## Stack
+- Python 3.9+ and Flask for the backend.
+- SQLite for storage.
+- Jinja templates with HTML/CSS for server-rendered pages.
+- pytest for automated tests.
 
-- Python and Flask for the backend
-- pytest for automated tests
-- Planned: SQLite for storage and Jinja templates with HTML/CSS for pages
+The single Flask application entry point is `app.py`. Business rules and database operations belong in shared functions in `backend/services.py`; JSON and HTML routes should call those functions instead of duplicating rules. Templates display data and messages but do not implement business rules.
 
-## Initial setup
+## Office timezone
 
-1. Accept the repository invitation and clone the repository.
-2. Open the repository folder in VS Code.
-3. Install Python and the Microsoft Python extension if needed.
-4. Open the Command Palette and select **Python: Create Environment**.
-5. Choose **Venv** and your installed Python interpreter.
-6. When prompted, select `requirements.txt` to install the dependencies.
-7. Ensure VS Code uses the project's `.venv` interpreter.
+The office policy timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps without an offset represent office-local time in `YYYY-MM-DDTHH:MM` format. Services use `ZoneInfo("Asia/Jakarta")` for their default clock. An injected `office_now` value must be a timezone-naive datetime representing Jakarta wall time, not computer-local or UTC-naive time. The `tzdata` dependency supplies IANA timezone data on Windows.
 
-Each teammate creates their own virtual environment. The `.venv` folder is excluded from Git; `requirements.txt` records the required libraries.
+## Setup
+
+1. Clone the repository and open it in VS Code.
+2. Use Python 3.9 or newer and create a project virtual environment.
+3. Install the dependencies from `requirements.txt`:
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
+
+Each teammate uses their own virtual environment. The `.venv` directory is excluded from Git.
 
 ## Run the application
 
-From the repository root, in a terminal with the project's virtual environment activated:
+From the repository root, with the virtual environment active:
 
 ```bash
 python app.py
 ```
 
-Open:
-
-http://127.0.0.1:5000/health
-
-Expected response:
+Open <http://127.0.0.1:5000/health>. The expected response is:
 
 ```json
 {"status": "ok"}
 ```
 
-Alternatively, open `app.py` in VS Code and select **Run Python File in Terminal** with `.venv` selected.
-
-Stop the server with **Ctrl+C** in its terminal.
+The home route redirects to `/rooms`, which is currently a placeholder page.
 
 ## Run the tests
 
-From the repository root, using the project's virtual environment:
+From the repository root:
 
 ```bash
 python -m pytest
 ```
 
-Alternatively, select **Python: Configure Tests** in VS Code, choose **pytest** and the **tests** folder, then run the tests from the Testing panel.
+The current suite contains six focused shared-error tests in `tests/test_errors.py` and a timezone test in `tests/test_timezone.py`. The error tests cover 400/404/409 exceptions, API 404 and page 404 behavior on the real app, and preservation of the `Allow` header on a 405 response. The timezone test simulates a UTC device clock and checks that services request `Asia/Jakarta`. Tests for the database, feature routes, and business rules still need to be added.
 
-The current tests check:
+## API contract and errors
 
-- Invalid input returns HTTP 400 and the expected JSON message.
-- Missing records return HTTP 404 and the expected JSON message.
-- Business-rule violations return HTTP 409 and the expected JSON message.
-- Unknown `/api/` endpoints return a JSON 404 response.
-- Unknown non-API pages retain an HTML 404 response.
-
-## Shared error handling
-
-Application code can raise these shared exceptions:
-
-| Exception | Status | Purpose |
-|---|---|---|
-| `InvalidInputError` | 400 | Invalid or missing input |
-| `NotFoundError` | 404 | A requested record does not exist |
-| `RuleViolationError` | 409 | An action breaks a business rule |
-
-Example JSON error:
+The authoritative endpoint, request, response, schema, validation, and status-code contract is [`docs/api.md`](docs/api.md). JSON errors use one envelope:
 
 ```json
-{"error": "Room not found."}
+{"error": "Human-readable message."}
 ```
 
-Flask-generated HTTP errors under `/api/` also use this JSON error format.
-
-HTML page handlers should catch shared business errors and display them using the shared frontend message component.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The feature API routes are still to be wired.
 
 ## Team responsibilities
 
-| Team member | Phase 1 responsibility |
+| Student | Ownership |
 |---|---|
-| Alex | API contract and architecture |
-| Angad | Backend foundation, Git environment, shared API errors, and README setup |
-| Dyllon | Shared HTML layout, CSS, frontend messages, and homepage redirect |
+| A (Angad) | Rooms and database setup |
+| B (Dyllon) | Employees and shared page UI |
+| C (Alex/Chung) | Bookings and Reports |
 
-Phase 2 ownership of Rooms, Employees, and Bookings & Reports will be recorded here once finalised.
+Each student owns their feature end to end: service rules, API, page, and tests. Coordinate changes to shared files such as `app.py`, `backend/services.py`, `docs/api.md`, and this README.
 
 ## Collaboration
 
-- Work on feature branches rather than committing directly to `main`.
-- Open small pull requests explaining what changed, why, and how it was tested.
-- Obtain at least one approving teammate review before merging.
-- Include manual test steps in PRs that change pages.
+- Start each feature from updated `main` on a branch named `feature/<area>-<short-name>`. Do not commit feature work directly to `main`.
+- Keep pull requests small (about 200 changed lines or fewer) and describe what changed, why, and how it was checked.
+- Obtain at least one approving teammate review before merging. Authors do not approve or merge their own work.
+- Page-changing PRs include manual test steps with the clicks and observed results.
 - Disclose significant AI-generated code in the PR description.
-- Keep the API contract in `docs/api.md` aligned with agreed behaviour.
+- Post a short done / next / blocked team update when starting, finishing, or blocked.
+- Keep `docs/api.md` aligned with implemented behavior.
 
-## Current limitations
+## Current implementation status
 
-This branch currently contains the backend foundation. Room, employee, and booking features, database setup, sample-data seeding, and the complete browser acceptance flow are not implemented here yet.
+| Area | Present | Still needed |
+|---|---|---|
+| Flask app | `app.py` registers shared error handlers, serves `/health`, redirects `/` to `/rooms`, and renders the placeholder Rooms page. | Wire the feature routes into this app. |
+| Service layer | `backend/services.py` has shared create/list/detail, booking, cancellation, and report functions. | Integrate them with routes and add automated coverage for their rules. |
+| API | The contract is documented in `docs/api.md`. | The ten required API operations are not wired to Flask routes yet. |
+| Database | The SQLite schema is documented in `docs/api.md`. | Add runnable connection/initialization support, enable foreign keys on each connection, and add a seed script. |
+| Pages | A base template, stylesheet, and placeholder Rooms page exist. | Implement Rooms, Employees, and Bookings pages. The base template's notice class names do not currently match the stylesheet, so message styling also needs repair. |
+| Tests | Six focused shared-error tests cover exception statuses and real-app API/page errors; one timezone test checks the default Jakarta clock. | Add database, feature-route, and business-rule tests. |
 
-The `/health` endpoint is a setup check. It is not the finished homepage.
+The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
-Repository protection must be configured separately in GitHub; these written workflow rules do not enforce it automatically.
+## Known limitations
+
+A clean clone cannot yet complete the browser acceptance flow. Runnable database setup and seed data, the required API routes, and the feature pages are still missing. The base template's notice classes also need to be matched with the stylesheet. GitHub branch protection must be configured separately; the written workflow rules do not enforce it.

@@ -11,13 +11,19 @@ database access, and booking rules.
 - Base path: `/api`.
 - Request and response bodies use `application/json`.
 - IDs and attendee counts are positive JSON integers. Boolean values are not integers.
-- Text fields are trimmed before storage. Room names and employee emails are unique
-  without regard to letter case.
-- API timestamps are office-local values in exactly `YYYY-MM-DDTHH:MM` format,
-  such as `2026-10-01T10:00`. They have no timezone suffix. The server must use
-  the office timezone, or inject the office-local clock into services.
+- Text fields (`name`, `floor`, `email`, `department`, and `title`) must be JSON strings,
+  are trimmed before storage, and are invalid when empty after trimming. No
+  additional text-length limits are defined. Room names and employee emails
+  are unique without regard to letter case.
+- The office policy timezone is the IANA zone `Asia/Jakarta` (WIB, UTC+07:00).
+  API timestamps are office-local wall times in exactly
+  `YYYY-MM-DDTHH:MM` format, such as `2026-10-01T10:00`, with no timezone
+  suffix. Services use `ZoneInfo("Asia/Jakarta")` for their default clock.
+  Their optional `office_now` argument is a timezone-naive `datetime`
+  representing local wall time in Asia/Jakarta; callers must not pass a
+  computer-local or UTC-naive datetime.
 - Date query parameters use `YYYY-MM-DD`. An omitted or empty date defaults to
-  the current date in the office timezone.
+  the current date in Asia/Jakarta.
 - Active booking lists and counts exclude rows where `cancelled_at` is not null.
 - JSON errors have one shape: `{"error": "Human-readable message."}`.
 - Invalid or missing request data returns `400`; missing resources return `404`;
