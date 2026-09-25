@@ -16,19 +16,20 @@
     </header>
 
     <main>
-        {% if success_message %}
-            <div class="notice notice-success" role="status">
-                {{ success_message }}
-            </div>
-        {% endif %}
-
-        {% if error_message %}
-            <div class="notice notice-error" role="alert">
-                {{ error_message }}
-            </div>
-        {% endif %}
-
-        {% block content %}{% endblock %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            {% if category == "success" %}
+                <div class="notice notice--success" role="status">
+                    {{ message }}
+                </div>
+            {% elif category == "error" %}
+                <div class="notice notice--error" role="alert">
+                    {{ message }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
     </main>
 </body>
 </html>
