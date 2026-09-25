@@ -2,13 +2,20 @@
 
 A student group project for managing meeting rooms, employees, and room bookings.
 
-This project is under development. The current backend foundation provides a health-check endpoint and shared API error handling.
+This project is under development. The repository has a single Flask app entry point, shared API error handling, and a service layer for the agreed business rules. The complete API and browser workflows are still in progress.
 
-## Stack
+## Stack and architecture
 
-- Python and Flask for the backend
+- Python 3.9+ and Flask for the backend
+- SQLite for storage
+- Jinja templates with HTML/CSS for server-rendered pages
 - pytest for automated tests
-- Planned: SQLite for storage and Jinja templates with HTML/CSS for pages
+
+The application has one Flask entry point: `app.py`. Start it with `python app.py`.
+
+## Office timezone
+
+The office policy timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps without an offset are office-local wall times in this zone. Services use this timezone for their default clock; an injected `office_now` value is a timezone-naive datetime representing Asia/Jakarta local time.
 
 ## Initial setup
 
@@ -84,13 +91,11 @@ HTML page handlers should catch shared business errors and display them using th
 
 ## Team responsibilities
 
-| Team member | Phase 1 responsibility |
+| Teammate | Ownership |
 |---|---|
-| Alex | API contract and architecture |
-| Angad | Backend foundation, Git environment, shared API errors, and README setup |
-| Dyllon | Shared HTML layout, CSS, frontend messages, and homepage redirect |
-
-Phase 2 ownership of Rooms, Employees, and Bookings & Reports will be recorded here once finalised.
+| A (Alex) | Rooms and database setup |
+| B (Angad) | Employees and shared page UI |
+| C (Dyllon) | Bookings and Reports |
 
 ## Collaboration
 
@@ -103,7 +108,7 @@ Phase 2 ownership of Rooms, Employees, and Bookings & Reports will be recorded h
 
 ## Current limitations
 
-This branch currently contains the backend foundation. Room, employee, and booking features, database setup, sample-data seeding, and the complete browser acceptance flow are not implemented here yet.
+The shared service layer in `backend/services.py` contains validation, database access, and booking/report rules. The complete API and browser workflows are still under development; `app.py` currently wires the health check, home redirect, and initial Rooms page. Database initialization, sample-data seeding, and the remaining acceptance flow still need to be completed.
 
 The `/health` endpoint is a setup check. It is not the finished homepage.
 
