@@ -14,7 +14,7 @@ app = Flask(__name__)
 #Hand over the key to Flask 
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
-#Stop program if Secret Key is not defined at the start with explaination 
+#Stop program if Secret Key is not defined at the start with explianation 
 if not app.config["SECRET_KEY"]: 
     raise RuntimeError("SECRET_KEY is missing. " \
     "Set it in your environment or local .env file.")
