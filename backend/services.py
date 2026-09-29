@@ -419,7 +419,11 @@ def check_booking_overlap(
           AND end_at > ?
         LIMIT 1
         """,
-        (room_id, end_at, start_at),
+        (
+            room_id,
+            end_dt.strftime(_DATETIME_FORMAT),
+            start_dt.strftime(_DATETIME_FORMAT),
+        ),
     )
     if cursor.fetchone():
         raise RuleViolationError(f"Room {room_id} is already booked for that time slot.")
