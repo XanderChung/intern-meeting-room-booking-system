@@ -366,12 +366,20 @@ def check_capacity(attendees: int, room_capacity: int) -> bool:
     return True
 
 
-def check_time_range(start_at: str, end_at: str) -> bool:
-    """Require start before end and a duration of no more than four hours."""
+def _parse_booking_interval(
+    start_at: str, end_at: str
+) -> tuple[datetime, datetime]:
+    """Parse a booking interval and require its start to precede its end."""
     start_dt = _parse_datetime(start_at)
     end_dt = _parse_datetime(end_at)
     if start_dt >= end_dt:
         raise InvalidInputError("Booking start time must be before end time.")
+    return start_dt, end_dt
+
+
+def check_time_range(start_at: str, end_at: str) -> bool:
+    """Require start before end and a duration of no more than four hours."""
+    start_dt, end_dt = _parse_booking_interval(start_at, end_at)
     if (end_dt - start_dt) > timedelta(hours=4):
         raise InvalidInputError("Booking duration cannot exceed 4 hours.")
     return True
@@ -401,10 +409,7 @@ def check_booking_overlap(
 ) -> bool:
     """Reject overlapping active bookings; half-open intervals allow adjacency."""
     room_id = _positive_integer(room_id, "room_id")
-    start_dt = _parse_datetime(start_at)
-    end_dt = _parse_datetime(end_at)
-    if start_dt >= end_dt:
-        raise InvalidInputError("Booking start time must be before end time.")
+    start_dt, end_dt = _parse_booking_interval(start_at, end_at)
     cursor = db_connection.execute(
         """
         SELECT 1 FROM bookings
