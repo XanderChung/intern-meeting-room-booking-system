@@ -26,6 +26,20 @@ The office policy timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps wi
 
 Each teammate uses their own virtual environment. The `.venv` directory is excluded from Git.
 
+## Environment Setup
+
+The app uses a Flask secret key to support session-based flash messages.
+
+1. Copy `.env.example` to create the local file `.env`.
+2. Generate a secret key:
+Write the following command into your terminal to generate a random secret key: 
+```sh
+   python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+3. Place this generated value directly after the "SECRET_KEY=" in the .env file 
+4. Do not put your real key in the README or `.env.example`
+
+
 ## Run the application
 
 From the repository root, with the virtual environment active:
