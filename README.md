@@ -39,6 +39,16 @@ Write the following command into your terminal to generate a random secret key:
 3. Place this generated value directly after the "SECRET_KEY=" in the .env file 
 4. Do not put your real key in the README or `.env.example`
 
+## Database setup
+
+The app uses a local SQLite database at `instance/meeting_rooms.sqlite3`. When the app starts, it creates the database and tables if they do not already exist.
+
+To add the sample rooms and employees, run this from the project folder with your virtual environment active:
+
+```sh
+python seed.py
+```
+
 
 ## Run the application
 
