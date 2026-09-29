@@ -1,16 +1,16 @@
-CREATE TABLE rooms (
+CREATE TABLE IF NOT EXISTS rooms (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     name     TEXT NOT NULL COLLATE NOCASE UNIQUE,
     floor    TEXT NOT NULL,
     capacity INTEGER NOT NULL CHECK (capacity >= 1)
 );
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     name       TEXT NOT NULL,
     email      TEXT NOT NULL COLLATE NOCASE UNIQUE,
     department TEXT NOT NULL
 );
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     room_id      INTEGER NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
     employee_id  INTEGER NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
@@ -21,7 +21,7 @@ CREATE TABLE bookings (
     cancelled_at TEXT NULL,
     CHECK (start_at < end_at)
 );
-CREATE INDEX bookings_room_time_idx
+CREATE INDEX IF NOT EXISTS bookings_room_time_idx
     ON bookings (room_id, start_at, end_at);
-CREATE INDEX bookings_employee_time_idx
+CREATE INDEX IF NOT EXISTS bookings_employee_time_idx
     ON bookings (employee_id, start_at);

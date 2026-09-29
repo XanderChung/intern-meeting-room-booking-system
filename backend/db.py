@@ -25,15 +25,6 @@ def init_db(db_path=DATABASE_PATH):
     connection = get_connection(db_path)
 
     try:
-        rooms_table_exists = connection.execute(
-            """
-            SELECT 1
-            FROM sqlite_master
-            WHERE type = 'table' AND name = 'rooms'
-            """
-        ).fetchone()
-
-        if rooms_table_exists is None:
             schema = SCHEMA_PATH.read_text(encoding="utf-8")
             connection.executescript(schema)
     finally:

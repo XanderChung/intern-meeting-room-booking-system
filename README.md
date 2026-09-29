@@ -48,6 +48,7 @@ To add the sample rooms and employees, run this from the project folder with you
 ```sh
 python seed.py
 ```
+You can run the seed script more than once. It won’t duplicate sample rooms or employees, and it preserves custom records already in the database
 
 
 ## Run the application
