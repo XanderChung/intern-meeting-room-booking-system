@@ -36,8 +36,8 @@ Write the following command into your terminal to generate a random secret key:
 ```sh
    python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-3. Place this generated value direclty after the "SECRET_KEY=" in the .env file 
-4. Do not put your real key in the README or `env.example`
+3. Place this generated value directly after the "SECRET_KEY=" in the .env file 
+4. Do not put your real key in the README or `.env.example`
 
 
 ## Run the application
