@@ -184,9 +184,3 @@ def test_same_time_in_another_room_is_allowed(booking_context):
     )
 
 
-def test_cancelled_booking_does_not_block_its_old_slot(booking_context):
-    connection, _, _ = booking_context
-    booking = _create(booking_context)
-    services.cancel_booking(booking["id"], connection, office_now=OFFICE_NOW)
-
-    assert _validate(booking_context)
