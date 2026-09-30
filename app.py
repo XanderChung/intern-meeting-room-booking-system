@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, g, redirect, render_template, url_for
+from flask import Flask, g, redirect, render_template, url_for, request, jsonify, flash
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import register_error_handlers
+from errors import register_error_handlers, InvalidInputError, APIError
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -48,9 +48,45 @@ def rooms_api():
     rooms = services.list_rooms(get_db())
     return {"rooms": rooms}
 
+@app.post("/api/rooms")
+def create_room_api():
+    data = request.get_json(silent=True)
 
-@app.get("/rooms")
+    if not isinstance(data, dict):
+        raise InvalidInputError("Request body must be a JSON object.")
+
+    room = services.create_room(
+        data.get("name"),
+        data.get("floor"),
+        data.get("capacity"),
+        get_db(),
+    )
+    return jsonify(room=room), 201
+
+
+@app.route("/rooms", methods=["GET", "POST"])
 def rooms_page():
+    if request.method == "POST":
+        try:
+            capacity = int(request.form.get("capacity", ""))
+        except ValueError:
+            flash("Capacity must be a whole number of at least 1.", "error")
+            return redirect(url_for("rooms_page"))
+
+        try:
+            room = services.create_room(
+                request.form.get("name"),
+                request.form.get("floor"),
+                capacity,
+                get_db(),
+            )
+        except APIError as error:
+            flash(error.message, "error")
+        else:
+            flash(f"Room '{room['name']}' was added successfully.", "success")
+
+        return redirect(url_for("rooms_page"))
+
     rooms = services.list_rooms(get_db())
     return render_template("rooms.html", rooms=rooms)
 

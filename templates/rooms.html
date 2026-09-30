@@ -5,6 +5,29 @@
 {% block content %}
     <h2>Rooms</h2>
 
+    <section class="room-form-section" aria-labelledby="add-room-heading">
+        <h3 id="add-room-heading">Add a room</h3>
+
+        <form class="room-form" method="post" action="{{ url_for('rooms_page') }}">
+            <div class="form-field">
+                <label for="name">Room name</label>
+                <input id="name" name="name" type="text" required>
+            </div>
+
+            <div class="form-field">
+                <label for="floor">Floor</label>
+                <input id="floor" name="floor" type="text" required>
+            </div>
+
+            <div class="form-field">
+                <label for="capacity">Capacity</label>
+                <input id="capacity" name="capacity" type="number" min="1" required>
+            </div>
+
+            <button type="submit">Add room</button>
+        </form>
+    </section>
+
     {% if rooms %}
         <table>
             <thead>
