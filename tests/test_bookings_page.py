@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from html import unescape
+
 import pytest
 
 from app import app
@@ -98,7 +100,7 @@ def test_booking_form_calls_shared_service_and_shows_success(bookings_page, monk
     assert calls[0]["end_at"] == "2030-01-15T11:00"
     assert calls[0]["db_connection"] is not None
     assert b'class="notice notice--success"' in response.data
-    assert b'Booking "Planning" was created.' in response.data
+    assert 'Booking "Planning" was created.' in unescape(response.get_data(as_text=True))
     assert b"Planning" in response.data
 
     db = get_connection(db_path)
