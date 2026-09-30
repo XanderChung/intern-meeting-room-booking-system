@@ -6,3 +6,4 @@ __pycache__/
 instance/*.sqlite3
 instance/*.sqlite3-*
 .pytest-tmp/
+.pytest_tmp_b2/
