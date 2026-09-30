@@ -14,8 +14,11 @@ def db_connection(tmp_path):
     init_db(db_path)
 
     connection = get_connection(db_path)
-    yield connection
-    connection.close()
+    try:
+        yield connection
+    finally:
+        connection.close()
+
 
 @pytest.fixture
 def client(tmp_path):
