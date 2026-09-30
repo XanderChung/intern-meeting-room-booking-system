@@ -5,3 +5,4 @@ __pycache__/
 .env
 instance/*.sqlite3
 instance/*.sqlite3-*
+.pytest-tmp/
