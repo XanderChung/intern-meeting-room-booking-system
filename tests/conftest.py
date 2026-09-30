@@ -4,7 +4,7 @@ import os
 os.environ["SECRET_KEY"] = "test-only-key"
 
 import pytest
-from backend.db import get_connection, init_db, DATABASE_PATH
+from backend.db import get_connection, init_db
 
 
 @pytest.fixture
@@ -14,20 +14,28 @@ def db_connection(tmp_path):
     init_db(db_path)
 
     connection = get_connection(db_path)
-    yield connection
-    connection.close()
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 @pytest.fixture
 def client(tmp_path):
+    """Give each test a Flask client with a fresh database."""
     from app import app
 
-    previous_database = app.config["DATABASE"]
-    test_database = tmp_path / "rooms-test.sqlite3"
+    db_path = tmp_path / "test.sqlite3"
+    init_db(db_path)
 
-    app.config.update(TESTING=True, DATABASE=test_database)
-    init_db(test_database)
+    previous_config = {
+        "TESTING": app.config["TESTING"],
+        "DATABASE": app.config["DATABASE"],
+    }
+    app.config.update(TESTING=True, DATABASE=db_path)
 
-    yield app.test_client()
-
-    app.config["DATABASE"] = previous_database
+    try:
+        with app.test_client() as test_client:
+            yield test_client
+    finally:
+        app.config.update(previous_config)

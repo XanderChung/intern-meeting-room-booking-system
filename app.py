@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, g, redirect, render_template, request, url_for
+from flask import Flask, flash, g, redirect, render_template, request, url_for
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import InvalidInputError, register_error_handlers
+from errors import APIError, InvalidInputError, register_error_handlers
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -54,12 +54,56 @@ def rooms_page():
     rooms = services.list_rooms(get_db())
     return render_template("rooms.html", rooms=rooms)
 
-
 @app.get("/api/employees")
 def list_employees_api():
     """Return all employees using the shared employee-list service."""
     return {"employees": services.list_employees(get_db())}
 
+@app.post("/api/employees")
+def create_employee_api():
+    """Validate and save a new employee through the shared service."""
+    if not request.is_json:
+        raise InvalidInputError("Send employee details as JSON.")
+
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        raise InvalidInputError("The request body must be a JSON object.")
+
+    employee = services.create_employee(
+        name=data.get("name"),
+        email=data.get("email"),
+        department=data.get("department"),
+        db_connection=get_db(),
+    )
+
+    return {"employee": employee}, 201
+
+@app.post("/employees")
+def create_employee_page():
+    values = {
+        "name": request.form.get("name", ""),
+        "email": request.form.get("email", ""),
+        "department": request.form.get("department", ""),
+    }
+
+    try:
+        services.create_employee(
+            name=values["name"],
+            email=values["email"],
+            department=values["department"],
+            db_connection=get_db(),
+        )
+    except APIError as error:
+        flash(error.message, "error")
+        return render_template(
+            "employees.html",
+            employees=services.list_employees(get_db()),
+            values=values,
+        ), error.status_code
+
+    flash("Employee added successfully.", "success")
+    return redirect(url_for("employees_page"), code=303)
 
 @app.post("/api/bookings")
 def create_booking_api():
