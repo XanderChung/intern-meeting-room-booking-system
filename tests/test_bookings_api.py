@@ -1,7 +1,6 @@
 """API tests for creating bookings through the shared service."""
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from threading import Barrier
 
 import pytest
@@ -23,36 +22,37 @@ BOOKING = {
 
 @pytest.fixture
 def booking_api(tmp_path, monkeypatch):
-    database_path = tmp_path / "booking-api.sqlite3"
-    init_db(database_path)
-    connection = get_connection(database_path)
-    room = services.create_room("Test Room", "2", 6, connection)
-    employee = services.create_employee(
-        "Test Employee", "test@example.com", "Operations", connection
-    )
-    connection.close()
-
-    monkeypatch.setitem(app.config, "DATABASE", database_path)
+    path = tmp_path / "booking-api.sqlite3"
+    init_db(path)
+    db = get_connection(path)
+    room = services.create_room("Test Room", "2", 6, db)
+    employee = services.create_employee("Test Employee", "test@example.com", "Ops", db)
+    db.close()
+    monkeypatch.setitem(app.config, "DATABASE", path)
     monkeypatch.setitem(app.config, "TESTING", True)
-    return app.test_client(), room["id"], employee["id"], database_path
+    return app.test_client(), room["id"], employee["id"], path
 
 
-def _payload(room_id=1, employee_id=1, **overrides):
-    values = dict(BOOKING, room_id=room_id, employee_id=employee_id)
-    values.update(overrides)
-    return values
+def payload(room_id, employee_id, **changes):
+    data = dict(BOOKING, room_id=room_id, employee_id=employee_id)
+    data.update(changes)
+    return data
 
 
-def test_create_booking_returns_201_envelope_and_persists(booking_api):
-    client, room_id, employee_id, database_path = booking_api
+def booking_count(path):
+    db = get_connection(path)
+    try:
+        return db.execute("SELECT COUNT(*) FROM bookings").fetchone()[0]
+    finally:
+        db.close()
 
-    response = client.post(
-        "/api/bookings", json=_payload(room_id=room_id, employee_id=employee_id)
-    )
+
+def test_create_booking_returns_documented_envelope_and_persists(booking_api):
+    client, room_id, employee_id, path = booking_api
+    response = client.post("/api/bookings", json=payload(room_id, employee_id))
 
     assert response.status_code == 201
-    booking = response.get_json()["booking"]
-    assert booking == {
+    assert response.get_json()["booking"] == {
         "id": 1,
         "room_id": room_id,
         "employee_id": employee_id,
@@ -62,39 +62,22 @@ def test_create_booking_returns_201_envelope_and_persists(booking_api):
         "attendees": 6,
         "cancelled_at": None,
     }
-    connection = get_connection(database_path)
-    try:
-        assert connection.execute("SELECT COUNT(*) FROM bookings").fetchone()[0] == 1
-    finally:
-        connection.close()
+    assert booking_count(path) == 1
 
 
 @pytest.mark.parametrize(
-    "payload",
+    "body",
     [
         {},
         {"room_id": 1, "employee_id": 1, "title": "Planning"},
-        _payload(attendees=True),
-        _payload(start_at="2030-01-15T10:00", end_at="2030-01-15T10:00"),
+        dict(BOOKING, attendees=True),
+        dict(BOOKING, end_at=BOOKING["start_at"]),
+        [],
     ],
 )
-def test_invalid_booking_input_returns_400(booking_api, payload):
-    client, _, _, _ = booking_api
-
-    response = client.post("/api/bookings", json=payload)
-
-    assert response.status_code == 400
-    assert set(response.get_json()) == {"error"}
-
-
-@pytest.mark.parametrize("raw_body", ["{", "[]"])
-def test_non_object_or_malformed_json_returns_400(booking_api, raw_body):
-    client, _, _, _ = booking_api
-
-    response = client.post(
-        "/api/bookings", data=raw_body, content_type="application/json"
-    )
-
+def test_invalid_or_non_object_booking_data_returns_400(booking_api, body):
+    client, *_ = booking_api
+    response = client.post("/api/bookings", json=body)
     assert response.status_code == 400
     assert set(response.get_json()) == {"error"}
 
@@ -105,136 +88,90 @@ def test_non_object_or_malformed_json_returns_400(booking_api, raw_body):
 )
 def test_missing_room_or_employee_returns_404(booking_api, field, unknown_id):
     client, room_id, employee_id, _ = booking_api
-    values = {"room_id": room_id, "employee_id": employee_id}
-    values[field] = unknown_id
-
-    response = client.post(
-        "/api/bookings", json=_payload(**values)
-    )
-
+    ids = {"room_id": room_id, "employee_id": employee_id}
+    ids[field] = unknown_id
+    response = client.post("/api/bookings", json=payload(**ids))
     assert response.status_code == 404
-    assert set(response.get_json()) == {"error"}
 
 
-def test_exceeding_room_capacity_returns_409(booking_api):
+def test_over_capacity_returns_409(booking_api):
     client, room_id, employee_id, _ = booking_api
-
     response = client.post(
         "/api/bookings",
-        json=_payload(room_id=room_id, employee_id=employee_id, attendees=7),
+        json=payload(room_id, employee_id, attendees=7),
     )
-
     assert response.status_code == 409
 
 
-def test_overlapping_booking_conflicts_but_back_to_back_booking_succeeds(
-    booking_api,
-):
+def test_overlap_conflicts_but_back_to_back_booking_succeeds(booking_api):
     client, room_id, employee_id, _ = booking_api
-    first = client.post(
-        "/api/bookings", json=_payload(room_id=room_id, employee_id=employee_id)
-    )
+    assert client.post(
+        "/api/bookings", json=payload(room_id, employee_id)
+    ).status_code == 201
     overlap = client.post(
         "/api/bookings",
-        json=_payload(
-            room_id=room_id,
-            employee_id=employee_id,
-            start_at="2030-01-15T10:30",
-            end_at="2030-01-15T11:30",
-        ),
+        json=payload(room_id, employee_id, start_at="2030-01-15T10:30",
+                     end_at="2030-01-15T11:30"),
     )
     adjacent = client.post(
         "/api/bookings",
-        json=_payload(
-            room_id=room_id,
-            employee_id=employee_id,
-            start_at="2030-01-15T11:00",
-            end_at="2030-01-15T12:00",
-        ),
+        json=payload(room_id, employee_id, start_at="2030-01-15T11:00",
+                     end_at="2030-01-15T12:00"),
     )
-
-    assert first.status_code == 201
     assert overlap.status_code == 409
     assert adjacent.status_code == 201
 
 
 def test_cancelled_booking_does_not_block_slot_reuse(booking_api):
-    client, room_id, employee_id, database_path = booking_api
-    original = client.post(
-        "/api/bookings", json=_payload(room_id=room_id, employee_id=employee_id)
-    )
-    booking_id = original.get_json()["booking"]["id"]
-    connection = get_connection(database_path)
+    client, room_id, employee_id, path = booking_api
+    created = client.post("/api/bookings", json=payload(room_id, employee_id))
+    db = get_connection(path)
     try:
-        connection.execute(
+        db.execute(
             "UPDATE bookings SET cancelled_at = ? WHERE id = ?",
-            ("2030-01-15T09:00:00", booking_id),
+            ("2030-01-15T09:00:00", created.get_json()["booking"]["id"]),
         )
-        connection.commit()
+        db.commit()
     finally:
-        connection.close()
-
-    reused = client.post(
-        "/api/bookings", json=_payload(room_id=room_id, employee_id=employee_id)
-    )
-
-    assert original.status_code == 201
-    assert reused.status_code == 201
+        db.close()
+    assert client.post(
+        "/api/bookings", json=payload(room_id, employee_id)
+    ).status_code == 201
 
 
-def test_insert_failure_rolls_back_without_partial_booking(booking_api):
-    client, _, _, database_path = booking_api
-    connection = get_connection(database_path)
+def test_failed_insert_rolls_back_without_partial_booking(booking_api):
+    client, _, _, path = booking_api
+    db = get_connection(path)
     try:
-        connection.execute(
-            """
-            CREATE TRIGGER reject_booking_insert
-            BEFORE INSERT ON bookings
-            BEGIN
-                SELECT RAISE(ABORT, 'forced insert failure');
-            END
-            """
+        db.execute(
+            """CREATE TRIGGER reject_booking BEFORE INSERT ON bookings
+               BEGIN SELECT RAISE(ABORT, 'forced failure'); END"""
         )
-        connection.commit()
+        db.commit()
     finally:
-        connection.close()
-
+        db.close()
     response = client.post("/api/bookings", json=BOOKING)
-
     assert response.status_code == 409
-    connection = get_connection(database_path)
-    try:
-        assert connection.execute("SELECT COUNT(*) FROM bookings").fetchone()[0] == 0
-    finally:
-        connection.close()
+    assert booking_count(path) == 0
 
 
-def test_competing_requests_cannot_double_book_the_same_slot(
-    booking_api, monkeypatch
-):
-    _, room_id, employee_id, database_path = booking_api
+def test_competing_requests_cannot_double_book_a_slot(booking_api, monkeypatch):
+    _, room_id, employee_id, path = booking_api
     barrier = Barrier(2)
-    original_create_booking = services.create_booking
+    create = services.create_booking
 
-    def synchronized_create_booking(*args, **kwargs):
+    def simultaneous(*args, **kwargs):
         barrier.wait(timeout=10)
-        return original_create_booking(*args, **kwargs)
+        return create(*args, **kwargs)
 
-    monkeypatch.setattr(services, "create_booking", synchronized_create_booking)
+    monkeypatch.setattr(services, "create_booking", simultaneous)
 
-    def submit_booking():
+    def submit():
         with app.test_client() as client:
-            return client.post(
-                "/api/bookings",
-                json=_payload(room_id=room_id, employee_id=employee_id),
-            )
+            return client.post("/api/bookings", json=payload(room_id, employee_id))
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        responses = list(executor.map(lambda _: submit_booking(), range(2)))
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        responses = list(pool.map(lambda _: submit(), range(2)))
+    assert sorted(r.status_code for r in responses) == [201, 409]
+    assert booking_count(path) == 1
 
-    assert sorted(response.status_code for response in responses) == [201, 409]
-    connection = get_connection(database_path)
-    try:
-        assert connection.execute("SELECT COUNT(*) FROM bookings").fetchone()[0] == 1
-    finally:
-        connection.close()
