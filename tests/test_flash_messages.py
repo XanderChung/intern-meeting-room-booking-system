@@ -20,8 +20,8 @@ def trigger_flash_for_test(category):
         ("error", "notice--error", "alert"),
     ],
 )
-def test_flash_messages_render_after_redirect(category, notice_class, role):
-    response = app.test_client().get(
+def test_flash_messages_render_after_redirect(client, category, notice_class, role):
+    response = client.get(
         f"/_test/flash/{category}",
         follow_redirects=True,
     )
