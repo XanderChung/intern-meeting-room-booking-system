@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, g, redirect, render_template, url_for
+from flask import Flask, g, redirect, render_template, request, url_for
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import register_error_handlers
+from errors import InvalidInputError, register_error_handlers
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -59,6 +59,25 @@ def rooms_page():
 def list_employees_api():
     """Return all employees using the shared employee-list service."""
     return {"employees": services.list_employees(get_db())}
+
+
+@app.post("/api/bookings")
+def create_booking_api():
+    """Create a booking through the shared booking service."""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise InvalidInputError("Request body must be a JSON object.")
+
+    booking = services.create_booking(
+        room_id=payload.get("room_id"),
+        employee_id=payload.get("employee_id"),
+        title=payload.get("title"),
+        start_at=payload.get("start_at"),
+        end_at=payload.get("end_at"),
+        attendees=payload.get("attendees"),
+        db_connection=get_db(),
+    )
+    return {"booking": booking}, 201
 
 
 @app.get("/employees")
