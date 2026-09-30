@@ -83,6 +83,19 @@ def test_invalid_or_non_object_booking_data_returns_400(booking_api, body):
     assert response.status_code == 400
     assert set(response.get_json()) == {"error"}
 
+def test_malformed_json_returns_standard_400_error(booking_api):
+    client, *_ = booking_api
+
+    response = client.post(
+        "/api/bookings",
+        data='{"room_id": 1, "title": ',
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "error": "Request body must be a JSON object."
+    }
 
 @pytest.mark.parametrize(
     ("field", "unknown_id"),
@@ -176,4 +189,3 @@ def test_competing_requests_cannot_double_book_a_slot(booking_api, monkeypatch):
         responses = list(pool.map(lambda _: submit(), range(2)))
     assert sorted(r.status_code for r in responses) == [201, 409]
     assert booking_count(path) == 1
-
