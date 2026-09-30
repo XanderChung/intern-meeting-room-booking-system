@@ -44,15 +44,15 @@ def home():
     return redirect(url_for("rooms_page"))
 
 
+@app.get("/api/rooms")
+def rooms_api():
+    return {"rooms": services.list_rooms(get_db())}
+
+
 @app.get("/rooms")
 def rooms_page():
     rooms = services.list_rooms(get_db())
     return render_template("rooms.html", rooms=rooms)
-
-
-@app.get("/api/rooms")
-def rooms_api():
-    return {"rooms": services.list_rooms(get_db())}
 
 
 @app.get("/api/employees")
