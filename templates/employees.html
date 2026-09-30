@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Employees | Meeting Room Booking{% endblock %}
+
+{% block content %}
+    <h2>Employees</h2>
+
+    {% if employees %}
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Department</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                    <tr>
+                        <td>{{ employee.name }}</td>
+                        <td>{{ employee.email }}</td>
+                        <td>{{ employee.department }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No employees have been added yet.</p>
+    {% endif %}
+{% endblock %}
