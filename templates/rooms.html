@@ -4,29 +4,5 @@
 
 {% block content %}
     <h2>Rooms</h2>
-
-    {% if rooms %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Floor</th>
-                    <th>Capacity</th>
-                    <th>Available now</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for room in rooms %}
-                    <tr>
-                        <td>{{ room.name }}</td>
-                        <td>{{ room.floor }}</td>
-                        <td>{{ room.capacity }}</td>
-                        <td>{{ "Yes" if room.available_now else "No" }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No rooms have been added yet.</p>
-    {% endif %}
+    <p>The room list will go here.</p>
 {% endblock %}

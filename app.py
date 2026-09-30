@@ -43,16 +43,10 @@ def close_db(error=None):
 def home():
     return redirect(url_for("rooms_page"))
 
-@app.get("/api/rooms")
-def rooms_api():
-    rooms = services.list_rooms(get_db())
-    return {"rooms": rooms}
-
 
 @app.get("/rooms")
 def rooms_page():
-    rooms = services.list_rooms(get_db())
-    return render_template("rooms.html", rooms=rooms)
+    return render_template("rooms.html")
 
 
 @app.get("/api/employees")
