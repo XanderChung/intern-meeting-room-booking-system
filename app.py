@@ -1,19 +1,28 @@
-import os 
+import os
 from pathlib import Path
 
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
 from flask import Flask, g, redirect, render_template, url_for
-from errors import register_error_handlers
-from backend.db import DATABASE_PATH, get_connection, init_db
 
-#Read the .env file and load needed settings 
+from backend import services
+from backend.db import DATABASE_PATH, get_connection, init_db
+from errors import register_error_handlers
+
+# Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
 
-#Creats a Flask object named "app"
 app = Flask(__name__)
-
-#After creating the app, we configure the database 
 app.config["DATABASE"] = DATABASE_PATH
+
+# Hand the key to Flask so session-based flash messages can work.
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+if not app.config["SECRET_KEY"]:
+    raise RuntimeError(
+        "SECRET_KEY is missing. Set it in your environment or local .env file."
+    )
+
+register_error_handlers(app)
+
 
 def get_db():
     """Return this request's database connection, opening it if needed."""
@@ -30,28 +39,33 @@ def close_db(error=None):
         connection.close()
 
 
-#Hand over the key to Flask 
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
-
-#Stop program if Secret Key is not defined at the start with explianation 
-if not app.config["SECRET_KEY"]: 
-    raise RuntimeError("SECRET_KEY is missing. " \
-    "Set it in your environment or local .env file.")
-
-
-register_error_handlers(app)
-
 @app.get("/")
 def home():
     return redirect(url_for("rooms_page"))
+
 
 @app.get("/rooms")
 def rooms_page():
     return render_template("rooms.html")
 
+
+@app.get("/api/employees")
+def list_employees_api():
+    """Return all employees using the shared employee-list service."""
+    return {"employees": services.list_employees(get_db())}
+
+
+@app.get("/employees")
+def employees_page():
+    """Render the employee directory."""
+    employees = services.list_employees(get_db())
+    return render_template("employees.html", employees=employees)
+
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 if __name__ == "__main__":
     init_db(app.config["DATABASE"])
