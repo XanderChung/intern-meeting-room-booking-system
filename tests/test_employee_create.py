@@ -112,3 +112,34 @@ def test_create_employee_form_error(client):
 
     employees = client.get("/api/employees").get_json()["employees"]
     assert employees == []
+
+def test_create_employee_form_duplicate_email(client):
+    first = {
+        "name": "First Employee",
+        "email": "duplicate@example.com",
+        "department": "First Department",
+    }
+    assert client.post("/employees", data=first).status_code == 303
+    client.get("/employees")
+
+    second = {
+        "name": "Second Employee",
+        "email": "duplicate@example.com",
+        "department": "Second Department",
+    }
+    response = client.post("/employees", data=second)
+
+    assert response.status_code == 409
+
+    html = response.get_data(as_text=True)
+    assert "notice--error" in html
+    assert "already exists" in html
+
+    for value in second.values():
+        assert f'value="{value}"' in html
+
+    employees = client.get("/api/employees").get_json()["employees"]
+    assert len(employees) == 1
+    assert employees[0]["name"] == first["name"]
+    assert employees[0]["email"] == first["email"]
+    assert employees[0]["department"] == first["department"]
