@@ -1,6 +1,6 @@
-"""API tests for creating bookings through the shared service."""
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from threading import Barrier
 
 import pytest
@@ -18,6 +18,7 @@ BOOKING = {
     "end_at": "2030-01-15T11:00",
     "attendees": 6,
 }
+OFFICE_NOW = datetime(2030, 1, 15, 7, 0)
 
 
 @pytest.fixture
@@ -30,6 +31,7 @@ def booking_api(tmp_path, monkeypatch):
     db.close()
     monkeypatch.setitem(app.config, "DATABASE", path)
     monkeypatch.setitem(app.config, "TESTING", True)
+    monkeypatch.setattr(services, "_now", lambda office_now=None: OFFICE_NOW)
     return app.test_client(), room["id"], employee["id"], path
 
 
