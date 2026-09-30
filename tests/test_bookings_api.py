@@ -85,6 +85,20 @@ def test_invalid_or_non_object_booking_data_returns_400(booking_api, body):
     assert set(response.get_json()) == {"error"}
 
 
+def test_malformed_json_returns_standard_400_error(booking_api):
+    client, *_ = booking_api
+    response = client.post(
+        "/api/bookings",
+        data='{"room_id": 1, "title": ',
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "error": "Request body must be a JSON object."
+    }
+
+
 @pytest.mark.parametrize(
     ("field", "unknown_id"),
     [("room_id", 999), ("employee_id", 999)],
