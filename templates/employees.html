@@ -5,6 +5,31 @@
 {% block content %}
     <h2>Employees</h2>
 
+    <h3>Add employee</h3>
+    {% set values = values | default({}) %}
+
+    <form method="post" action="{{ url_for('create_employee_page') }}">
+        <p>
+            <label for="employee-name">Name</label><br>
+            <input id="employee-name" name="name" type="text"
+                   value="{{ values.get('name', '') }}" required>
+        </p>
+
+        <p>
+            <label for="employee-email">Email</label><br>
+            <input id="employee-email" name="email" type="text"
+                   value="{{ values.get('email', '') }}" required>
+        </p>
+
+        <p>
+            <label for="employee-department">Department</label><br>
+            <input id="employee-department" name="department" type="text"
+                   value="{{ values.get('department', '') }}" required>
+        </p>
+
+        <button type="submit">Add employee</button>
+    </form>
+
     {% if employees %}
         <table>
             <thead>
