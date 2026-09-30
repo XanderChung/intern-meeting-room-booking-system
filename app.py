@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, g, redirect, render_template, url_for
 from errors import register_error_handlers
 from backend.db import DATABASE_PATH, get_connection, init_db
+from backend import services
 
 #Read the .env file and load needed settings 
 load_dotenv(Path(__file__).with_name(".env"))
@@ -45,9 +46,16 @@ register_error_handlers(app)
 def home():
     return redirect(url_for("rooms_page"))
 
+@app.get("/api/rooms")
+def rooms_api():
+    rooms = services.list_rooms(get_db())
+    return {"rooms": rooms}
+
+
 @app.get("/rooms")
 def rooms_page():
-    return render_template("rooms.html")
+    rooms = services.list_rooms(get_db())
+    return render_template("rooms.html", rooms=rooms)
 
 @app.get("/health")
 def health_check():
