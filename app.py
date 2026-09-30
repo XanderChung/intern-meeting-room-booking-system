@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, g, redirect, render_template, request, url_for
+from flask import Flask, flash, g, redirect, render_template, request, url_for
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import InvalidInputError, register_error_handlers
+from errors import APIError, InvalidInputError, register_error_handlers
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -43,16 +43,16 @@ def close_db(error=None):
 def home():
     return redirect(url_for("rooms_page"))
 
-@app.get("/api/rooms")
-def rooms_api():
-    rooms = services.list_rooms(get_db())
-    return {"rooms": rooms}
-
 
 @app.get("/rooms")
 def rooms_page():
     rooms = services.list_rooms(get_db())
     return render_template("rooms.html", rooms=rooms)
+
+
+@app.get("/api/rooms")
+def rooms_api():
+    return {"rooms": services.list_rooms(get_db())}
 
 
 @app.get("/api/employees")
@@ -80,6 +80,97 @@ def create_booking_api():
     return {"booking": booking}, 201
 
 
+@app.get("/api/bookings")
+def list_bookings_api():
+    """List active bookings using the shared booking-list service."""
+    return {
+        "bookings": services.list_bookings(
+            get_db(),
+            date_value=request.args.get("date"),
+            room_id=request.args.get("room_id"),
+        )
+    }
+
+
+def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=True):
+    """Get page data and fall back to office today for invalid page filters."""
+    office_now = services._now()
+    office_today = office_now.date().isoformat()
+    selected_date = date_value or office_today
+    selected_room_id = room_id or ""
+
+    try:
+        bookings = services.list_bookings(
+            get_db(),
+            date_value=date_value,
+            room_id=room_id,
+            office_now=office_now,
+        )
+    except APIError as error:
+        if show_filter_error:
+            flash(error.message, "error")
+        selected_date = office_today
+        selected_room_id = ""
+        bookings = services.list_bookings(
+            get_db(), date_value=office_today, office_now=office_now
+        )
+
+    return {
+        "bookings": bookings,
+        "employees": services.list_employees(get_db()),
+        "rooms": services.list_rooms(get_db()),
+        "selected_date": selected_date,
+        "selected_room_id": selected_room_id,
+    }
+
+
+@app.get("/bookings")
+def bookings_page():
+    values = _booking_page_values(
+        date_value=request.args.get("date"),
+        room_id=request.args.get("room_id"),
+    )
+    return render_template("bookings.html", **values, form_data={})
+
+
+def _form_integer(field_name):
+    raw_value = request.form.get(field_name, "")
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError) as error:
+        label = field_name.replace("_", " ").capitalize()
+        raise InvalidInputError(f"{label} must be an integer.") from error
+
+
+@app.post("/bookings")
+def create_booking_page():
+    form_data = request.form
+    date_value = form_data.get("date", "")
+    try:
+        start_time = form_data.get("start_time", "")
+        end_time = form_data.get("end_time", "")
+        booking = services.create_booking(
+            room_id=_form_integer("room_id"),
+            employee_id=_form_integer("employee_id"),
+            title=form_data.get("title", ""),
+            start_at=f"{date_value}T{start_time}",
+            end_at=f"{date_value}T{end_time}",
+            attendees=_form_integer("attendees"),
+            db_connection=get_db(),
+        )
+    except APIError as error:
+        flash(error.message, "error")
+        values = _booking_page_values(
+            date_value=date_value, show_filter_error=False
+        )
+        return render_template(
+            "bookings.html", **values, form_data=form_data
+        )
+
+    flash(f"Booking \"{booking['title']}\" was created.", "success")
+    return redirect(url_for("bookings_page", date=date_value))
+
+
 @app.get("/employees")
 def employees_page():
     """Render the employee directory."""
@@ -95,3 +186,4 @@ def health_check():
 if __name__ == "__main__":
     init_db(app.config["DATABASE"])
     app.run()
+
