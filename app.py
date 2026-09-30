@@ -43,10 +43,16 @@ def close_db(error=None):
 def home():
     return redirect(url_for("rooms_page"))
 
+@app.get("/api/rooms")
+def rooms_api():
+    rooms = services.list_rooms(get_db())
+    return {"rooms": rooms}
+
 
 @app.get("/rooms")
 def rooms_page():
-    return render_template("rooms.html")
+    rooms = services.list_rooms(get_db())
+    return render_template("rooms.html", rooms=rooms)
 
 @app.get("/api/employees")
 def list_employees_api():
@@ -98,6 +104,25 @@ def create_employee_page():
 
     flash("Employee added successfully.", "success")
     return redirect(url_for("employees_page"), code=303)
+
+@app.post("/api/bookings")
+def create_booking_api():
+    """Create a booking through the shared booking service."""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise InvalidInputError("Request body must be a JSON object.")
+
+    booking = services.create_booking(
+        room_id=payload.get("room_id"),
+        employee_id=payload.get("employee_id"),
+        title=payload.get("title"),
+        start_at=payload.get("start_at"),
+        end_at=payload.get("end_at"),
+        attendees=payload.get("attendees"),
+        db_connection=get_db(),
+    )
+    return {"booking": booking}, 201
+
 
 @app.get("/employees")
 def employees_page():
