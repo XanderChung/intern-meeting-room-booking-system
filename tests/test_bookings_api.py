@@ -273,3 +273,61 @@ def test_list_bookings_invalid_filters_return_standard_400(booking_api, query):
     assert response.status_code == 400
     assert set(response.get_json()) == {"error"}
 
+
+
+
+def test_cancel_booking_returns_updated_envelope_and_releases_slot(booking_api):
+    client, room_id, employee_id, _ = booking_api
+    created = client.post("/api/bookings", json=payload(room_id, employee_id))
+    booking_id = created.get_json()["booking"]["id"]
+
+    response = client.post(f"/api/bookings/{booking_id}/cancel")
+
+    assert response.status_code == 200
+    cancelled = response.get_json()["booking"]
+    assert cancelled["id"] == booking_id
+    assert cancelled["title"] == "Planning"
+    assert cancelled["cancelled_at"] == "2030-01-15T07:00:00"
+    assert client.get("/api/bookings?date=2030-01-15").get_json() == {
+        "bookings": []
+    }
+
+    rebooked = client.post(
+        "/api/bookings", json=payload(room_id, employee_id)
+    )
+    assert rebooked.status_code == 201
+
+
+def test_cancel_unknown_booking_returns_404(booking_api):
+    client, *_ = booking_api
+
+    response = client.post("/api/bookings/999/cancel")
+
+    assert response.status_code == 404
+    assert set(response.get_json()) == {"error"}
+
+
+def test_cancelling_booking_twice_returns_409(booking_api):
+    client, room_id, employee_id, _ = booking_api
+    created = client.post("/api/bookings", json=payload(room_id, employee_id))
+    booking_id = created.get_json()["booking"]["id"]
+
+    assert client.post(f"/api/bookings/{booking_id}/cancel").status_code == 200
+    response = client.post(f"/api/bookings/{booking_id}/cancel")
+
+    assert response.status_code == 409
+    assert "already been cancelled" in response.get_json()["error"]
+
+
+def test_cancelling_at_or_after_start_returns_409(booking_api, monkeypatch):
+    client, room_id, employee_id, _ = booking_api
+    created = client.post("/api/bookings", json=payload(room_id, employee_id))
+    booking_id = created.get_json()["booking"]["id"]
+    monkeypatch.setattr(
+        services, "_now", lambda office_now=None: datetime(2030, 1, 15, 10, 0)
+    )
+
+    response = client.post(f"/api/bookings/{booking_id}/cancel")
+
+    assert response.status_code == 409
+    assert "already started" in response.get_json()["error"]
