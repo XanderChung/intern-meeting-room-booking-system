@@ -2,134 +2,250 @@
 
 A student team project for managing meeting rooms, employees, and room bookings. The project is still under development.
 
-## Agreed stack and architecture
+## Stack and architecture
 
-- Python 3.9+ and Flask for the backend.
+- Python 3.9+ and Flask.
 - SQLite for storage.
-- Jinja templates with HTML/CSS for server-rendered pages.
+- Jinja templates with HTML/CSS.
 - pytest for automated tests.
 
-The single Flask application entry point is `app.py`. Business rules and database operations belong in shared functions in `backend/services.py`; JSON and HTML routes should call those functions instead of duplicating rules. Templates display data and messages but do not implement business rules.
+The application entry point is `app.py`. Business rules and database operations belong in `backend/services.py`. API and HTML routes call these shared services rather than duplicating validation rules.
 
 ## Office timezone
 
-The office policy timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps without an offset represent office-local time in `YYYY-MM-DDTHH:MM` format. Services use `ZoneInfo("Asia/Jakarta")` for their default clock. An injected `office_now` value must be a timezone-naive datetime representing Jakarta wall time, not computer-local or UTC-naive time. The `tzdata` dependency supplies IANA timezone data on Windows.
+The office timezone is `Asia/Jakarta` (WIB, UTC+07:00).
+
+API timestamps use office-local time in `YYYY-MM-DDTHH:MM` format. Services use `ZoneInfo("Asia/Jakarta")` for the default clock. Injected `office_now` values must be timezone-naive datetimes representing Jakarta time.
+
+The `tzdata` dependency supplies timezone data on Windows.
 
 ## Setup
 
-1. Clone the repository and open it in VS Code.
-2. Use Python 3.9 or newer and create a project virtual environment.
-3. Install the dependencies from `requirements.txt`:
-   ```bash
+1. Clone the repository and open the project folder in VS Code.
+2. Create a virtual environment:
+
+   ```sh
+   python -m venv .venv
+   ```
+
+   On Windows, you can use `py -m venv .venv`.
+
+3. Activate the environment.
+
+   Windows PowerShell:
+
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+   macOS/Linux:
+
+   ```sh
+   source .venv/bin/activate
+   ```
+
+4. Install dependencies:
+
+   ```sh
    python -m pip install -r requirements.txt
    ```
 
-Each teammate uses their own virtual environment. The `.venv` directory is excluded from Git.
+Each teammate uses their own virtual environment. Do not commit `.venv`.
 
-## Environment Setup
+If PowerShell blocks activation, you can use the environment's Python directly:
 
-The app uses a Flask secret key to support session-based flash messages.
-
-1. Copy `.env.example` to create the local file `.env`.
-2. Generate a secret key:
-Write the following command into your terminal to generate a random secret key: 
-```sh
-   python3 -c "import secrets; print(secrets.token_hex(32))"
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
-3. Place this generated value directly after the "SECRET_KEY=" in the .env file 
-4. Do not put your real key in the README or `.env.example`
+
+## Environment settings
+
+Flask uses a secret key to sign sessions and support flash messages.
+
+1. Copy `.env.example` to a local file named `.env`.
+2. Generate a key:
+
+   ```sh
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+   On Windows without an active environment, use `py` instead of `python`.
+
+3. Set the generated value in `.env`:
+
+   ```dotenv
+   SECRET_KEY=your-generated-value
+   ```
+
+Do not commit `.env` or a real secret key. Tests use a separate test-only key.
 
 ## Database setup
 
-The app uses a local SQLite database at `instance/meeting_rooms.sqlite3`. When the app starts, it creates the database and tables if they do not already exist.
+The local SQLite database is stored at `instance/meeting_rooms.sqlite3`.
 
-To add the sample rooms and employees, run this from the project folder with your virtual environment active:
+Running `python app.py` initializes missing tables. To initialize the database and add sample rooms and employees, run:
 
 ```sh
 python seed.py
 ```
-You can run the seed script more than once. It won’t duplicate sample rooms or employees, and it preserves custom records already in the database
+
+The seed script preserves existing records and skips duplicate sample room names and employee emails.
 
 ## Run the application
 
-From the repository root, with the virtual environment active:
+From the project root, with the virtual environment active:
 
-```bash
+```sh
 python app.py
 ```
 
-Open <http://127.0.0.1:5000/health>. The expected response is:
+Open http://127.0.0.1:5000/.
+
+The home page redirects to `/rooms`. The health endpoint at `/health` returns:
 
 ```json
 {"status": "ok"}
 ```
 
-The home route redirects to `/rooms`, which lists rooms and their current availability and includes a room-creation form. The employee directory at `/employees` supports employee creation and links to individual detail pages showing upcoming active bookings. The Bookings page at `/bookings` supports listing, filtering, and creating bookings.
+Available pages:
+
+- `/rooms`: room list, current availability, and room creation.
+- `/employees`: employee directory and employee creation.
+- `/employees/{id}`: employee details and upcoming active bookings.
+- `/bookings`: booking list, date/room filters, and booking creation.
+
+Employee names in the directory link to their detail pages.
+
+Upcoming employee bookings are ordered by start time and exclude cancelled bookings and bookings that have already started.
+
+For development on port 5001, initialize the database first, then run:
+
+```sh
+python -m flask --app app run --port 5001
+```
+
+Open http://127.0.0.1:5001/ when using that command.
 
 ## Run the tests
 
-From the repository root:
+From the project root:
 
-```bash
+```sh
 python -m pytest
 ```
-Reported local checks on 2026-10-01: Angad reported **108 passed** for his room-creation changes; Dyllon reported **98 passed in 2.11s** before merging the latest main changes. Rerun the full suite after resolving this merge and record the result in the PR.
 
-The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing and creation, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
+If pytest cannot access its default temporary folder on Windows, use:
 
-These are local test results, not GitHub workflow results. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
+```sh
+python -m pytest -q --basetemp=.pytest_tmp_b2
+```
+
+Keep `.pytest_tmp_b2/` excluded from Git. This directory is reserved for temporary test files; pytest may clear it between runs.
+
+Local full-suite verification for this branch: **98 passed in 2.15s**.
+
+Command used:
+
+```sh
+python -m pytest -q --basetemp=.pytest_tmp_b2
+```
+
+This is a local test result, not a GitHub workflow result.
+
+Tests cover shared errors, timezone handling, database initialization and seeding, flash messages, room routes, booking routes, and employee features.
+
+Employee tests include:
+
+- Successful creation and persistence.
+- Required fields, invalid types, and invalid email input.
+- Duplicate emails through API and form submissions.
+- Retained form values when submission fails.
+- Employee detail API and HTML page.
+- Missing-employee JSON and HTML responses.
+- Upcoming-booking ordering and filtering.
+- Directory and detail-page navigation links.
 
 ## Browser verification
 
-- Employee creation: success and duplicate-email feedback were checked, including retained inputs on errors.
-- Employee details: checked populated upcoming bookings, the detail API, and the HTML missing-employee page with status 404.
-- Shared UI: opened Rooms and Employees and confirmed matching input widths, spacing, blue buttons, and visible table headers. Screenshots are included with the PR.
+The following checks were performed during employee and shared UI development:
+
+- Created an employee and observed the success notice and new directory entry.
+- Submitted a duplicate email and observed the error notice with inputs retained.
+- Opened employee detail pages from directory links.
+- Checked the employee detail API and its missing-employee JSON response.
+- Opened a missing employee's HTML page and observed the shared layout, error notice, and status 404.
+- Created a future booking and confirmed its room, title, start/end times, and attendees appeared on the selected employee's detail page.
+- Opened Rooms and Employees and confirmed matching form widths, spacing, blue buttons, and shared table styling.
+
+Screenshots and observed results belong in the relevant PR descriptions. These checks do not replace final integrated acceptance testing.
 
 ## API contract and errors
 
-The authoritative endpoint, request, response, schema, validation, and status-code contract is [`docs/api.md`](docs/api.md). JSON errors use one envelope:
+The endpoint, request, response, database, and validation contract is documented in [`docs/api.md`](docs/api.md).
+
+Implemented API routes include:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/rooms` | List rooms and current availability |
+| POST | `/api/rooms` | Create a room |
+| GET | `/api/employees` | List employees |
+| POST | `/api/employees` | Create an employee |
+| GET | `/api/employees/{id}` | Return employee details and upcoming bookings |
+| GET | `/api/bookings` | List and filter active bookings |
+| POST | `/api/bookings` | Create a booking |
+
+JSON errors use this format:
 
 ```json
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Employee APIs support `GET /api/employees`, `POST /api/employees`, and `GET /api/employees/{id}`. Missing employees return JSON errors through the API and an HTML error notice with status 404 through the detail page. Room APIs support listing and creation at `/api/rooms`. Booking APIs support listing and creation at `/api/bookings`.
+Shared exceptions map invalid input to 400, missing resources to 404, and business-rule conflicts to 409.
+
+A missing employee returns a JSON error through the API. The HTML employee-detail route renders the shared layout with an error notice while preserving status 404.
 
 ## Team responsibilities
 
 | Student | Ownership |
 |---|---|
-| A (Angad) | Rooms and database setup |
-| B (Dyllon) | Employees and shared page UI |
-| C (Alex/Chung) | Bookings and Reports |
+| A — Angad | Rooms and database setup |
+| B — Dyllon | Employees and shared page UI |
+| C — Alex/Chung | Bookings and Reports |
 
-Each student owns their feature end to end: service rules, API, page, and tests. Coordinate changes to shared files such as `app.py`, `backend/services.py`, `docs/api.md`, and this README.
+Each student owns their feature's services, API, pages, and tests. Coordinate changes to shared files such as `app.py`, `backend/services.py`, `docs/api.md`, `static/styles.css`, and this README.
 
 ## Collaboration
 
-- Start each feature from updated `main` on a branch named `feature/<area>-<short-name>`. Do not commit feature work directly to `main`.
-- Keep pull requests small (about 200 changed lines or fewer) and describe what changed, why, and how it was checked.
-- Obtain at least one approving teammate review before merging. Authors do not approve or merge their own work.
-- Page-changing PRs include manual test steps with the clicks and observed results.
-- Disclose significant AI-generated code in the PR description.
-- Post a short done / next / blocked team update when starting, finishing, or blocked.
-- Keep `docs/api.md` aligned with implemented behavior.
+- Start features from updated `main` using a `feature/<area>-<short-name>` branch.
+- Do not commit feature work directly to `main`.
+- Keep PRs focused, targeting roughly 200 changed lines where practical.
+- Explain what changed and how it was checked.
+- Obtain at least one approving teammate review before merging.
+- Authors do not approve or merge their own work.
+- Include browser steps and observed results for page changes.
+- Disclose significant AI assistance in PR descriptions.
+- Post brief done / next / blocked updates.
+- Keep the API contract aligned with implementation.
 
 ## Current implementation status
 
-| Area | Present | Still needed |
+| Area | Implemented | Remaining |
 |---|---|---|
-| Employees | List and creation APIs/page; detail API/page; upcoming bookings ordered by start; HTML and JSON missing-employee handling; automated and browser checks. | Final integrated acceptance checks. |
-| Rooms | Room listing and creation APIs/page with current availability, validation, and retained form values on errors. | Room detail routes still need integration. |
-| Bookings | Listing/filtering and creation APIs/page using shared services. | Cancellation and reports route integration, plus final acceptance checks. |
-| Shared UI | Base layout, navigation, and categorized success/error notices. This branch adds matching room/employee form styling, wrapping navigation, keyboard focus indicators, and shared table styling while preserving existing room classes. | Teammate review and merge of this branch; remaining integrated UI checks. |
-| Database | SQLite schema, foreign keys, repeatable initialization, and sample seeding. | Final fresh-clone verification. |
-| Tests | Employee features, room listing and creation, booking routes, shared errors, timezone, database, seeding, and flash messages. | Extend coverage as remaining features land and rerun the full suite. |
+| Employees | Listing, creation, and details through API and HTML; upcoming bookings; validation and missing-employee handling; automated and browser checks | Final integrated acceptance checks |
+| Rooms | Listing, current availability, creation, validation, and retained inputs on form errors | Room detail route integration |
+| Bookings | Listing, filtering, and creation through API and HTML | Cancellation and report route integration; final acceptance checks |
+| Shared UI | Base layout, navigation, notices, and shared tables; this branch aligns employee form styling with existing room classes | Review and merge of this branch; remaining UI checks |
+| Database | Schema, foreign keys, repeatable initialization, and sample seeding | Fresh-clone verification |
+| Services | Shared room, employee, booking, cancellation, and report functions | Integrate remaining routes and extend checks |
+| Tests | Coverage for implemented routes, employee rules, shared errors, timezone, database, seeding, and flash messages | Extend coverage as remaining features land |
 
-The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
+Write services own their transactions and require a SQLite connection with no active transaction.
 
 ## Known limitations
 
-The full browser acceptance flow still requires room details, cancellation, reporting, remaining shared UI checks, and fresh-clone verification. Shared styling in this branch has been checked on the Rooms and Employees pages; the Bookings form has not been restyled in this PR. Employee listing, creation, and details are implemented. GitHub branch protection and workflow configuration must be checked separately; written collaboration rules do not enforce them.
+The full acceptance flow still requires room details, cancellation, reporting, remaining UI checks, and fresh-clone verification.
 
+Employee listing, creation, and details are implemented. The Bookings form was not restyled in this shared UI PR.
 
+GitHub workflow runs and branch protection must be checked separately. Written collaboration rules do not enforce repository settings.
