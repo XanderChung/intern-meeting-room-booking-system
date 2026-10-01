@@ -42,7 +42,11 @@
             <tbody>
                 {% for employee in employees %}
                     <tr>
-                        <td>{{ employee.name }}</td>
+                        <td>
+                            <a href="{{ url_for('employee_detail_page', employee_id=employee.id) }}">
+                                {{ employee.name }}
+                            </a>
+                        </td>
                         <td>{{ employee.email }}</td>
                         <td>{{ employee.department }}</td>
                     </tr>
