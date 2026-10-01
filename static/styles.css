@@ -14,6 +14,7 @@ header {
 
 nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
 }
 
@@ -41,13 +42,16 @@ main {
     background-color: #f8d7da;
 }
 
-/* Rooms page styles */
-.room-form-section {
+/* Shared room and employee form sections */
+.room-form-section,
+.form-section {
     max-width: 32rem;
     margin: 1.5rem 0 2rem;
 }
 
-.room-form {
+/* Shared form layout */
+.room-form,
+.data-form {
     display: grid;
     gap: 1rem;
 }
@@ -61,9 +65,11 @@ main {
     font-weight: 600;
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
     box-sizing: border-box;
     width: 100%;
+    min-width: 0;
     padding: 0.65rem 0.75rem;
     border: 1px solid #aeb7c2;
     border-radius: 4px;
@@ -72,13 +78,17 @@ main {
     font: inherit;
 }
 
-.room-form input:focus {
+.room-form input:focus-visible,
+.room-form select:focus-visible,
+.data-form input:focus-visible,
+.data-form select:focus-visible {
     border-color: #1756a9;
     outline: 2px solid #c9dcf7;
     outline-offset: 1px;
 }
 
-.room-form button {
+.room-form button,
+.data-form button {
     justify-self: start;
     padding: 0.65rem 1rem;
     border: 0;
@@ -90,10 +100,18 @@ main {
     cursor: pointer;
 }
 
-.room-form button:hover {
+.room-form button:hover,
+.data-form button:hover {
     background: #10427f;
 }
 
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #1756a9;
+    outline-offset: 2px;
+}
+
+/* Shared tables */
 table {
     width: 100%;
     margin-top: 1.25rem;
@@ -106,6 +124,8 @@ td {
     padding: 0.7rem 1rem;
     border-bottom: 1px solid #d7dce2;
     text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
 }
 
 th {
@@ -118,5 +138,3 @@ th {
         padding: 0.55rem 0.5rem;
     }
 }
-
-
