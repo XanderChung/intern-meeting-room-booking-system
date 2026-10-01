@@ -50,6 +50,12 @@ Flask uses `SECRET_KEY` for sessions and flash messages. Copy `.env.example` to 
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
+Put the generated value in `.env` on this line, replacing the example text with your key:
+
+```dotenv
+SECRET_KEY=paste-your-generated-key-here
+```
+
 Do not commit `.env` or a real secret key. Tests set a test-only key.
 
 ## Database setup
