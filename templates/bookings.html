@@ -32,6 +32,7 @@
                         <th scope="col">Room</th>
                         <th scope="col">Booked by</th>
                         <th scope="col">Attendees</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,12 +43,50 @@
                             <td>{{ booking.room_name }}</td>
                             <td>{{ booking.employee_name }}</td>
                             <td>{{ booking.attendees }}</td>
+                            <td>
+                                {% if booking.start_at > office_now %}
+                                    <form method="post" action="{{ url_for('cancel_booking_page', booking_id=booking.id) }}">
+                                        <input type="hidden" name="date" value="{{ selected_date }}">
+                                        <input type="hidden" name="room_id" value="{{ selected_room_id }}">
+                                        <button type="submit">Cancel</button>
+                                    </form>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         {% else %}
             <p>No active bookings match this date and room. You can create one below.</p>
+        {% endif %}
+    </section>
+
+    <section aria-labelledby="top-rooms-heading">
+        <h3 id="top-rooms-heading">Top 5 rooms</h3>
+        {% if top_rooms %}
+            <table id="top-rooms-table">
+                <caption>Rooms ranked by active booking count</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Room</th>
+                        <th scope="col">Floor</th>
+                        <th scope="col">Capacity</th>
+                        <th scope="col">Bookings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in top_rooms %}
+                        <tr>
+                            <td>{{ room.name }}</td>
+                            <td>{{ room.floor }}</td>
+                            <td>{{ room.capacity }}</td>
+                            <td>{{ room.booking_count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No rooms to rank yet.</p>
         {% endif %}
     </section>
 

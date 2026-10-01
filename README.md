@@ -178,6 +178,9 @@ The following checks were performed during employee and shared UI development:
 - Opened Rooms and Employees and confirmed matching form widths, spacing, blue buttons, and shared table styling.
 
 Screenshots and observed results belong in the relevant PR descriptions. These checks do not replace final integrated acceptance testing.
+Latest full-suite run on 2026-10-01: **108 passed**.
+
+The suite covers shared API errors, timezone behavior, database initialization and seeding, employee and room list routes, flash messages, and booking behavior. Additional tests are still needed for features that have not yet been implemented.
 
 ## API contract and errors
 
@@ -201,9 +204,7 @@ JSON errors use this format:
 {"error": "Human-readable message."}
 ```
 
-Shared exceptions map invalid input to 400, missing resources to 404, and business-rule conflicts to 409.
-
-A missing employee returns a JSON error through the API. The HTML employee-detail route renders the shared layout with an error notice while preserving status 404.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The room-list and room-creation APIs (`GET /api/rooms` and `POST /api/rooms`) and the employee-list API (`GET /api/employees`) are implemented. Room detail, employee creation and detail, and booking and report routes are still to be completed.
 
 ## Team responsibilities
 
