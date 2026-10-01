@@ -40,8 +40,6 @@ main {
 .notice--error {
     color: #721c24;
     background-color: #f8d7da;
-<<<<<<< Updated upstream
-=======
 }
 
 /* Shared room and employee form sections */
@@ -139,5 +137,4 @@ th {
     td {
         padding: 0.55rem 0.5rem;
     }
->>>>>>> Stashed changes
 }
