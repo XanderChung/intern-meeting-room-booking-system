@@ -1,3 +1,5 @@
+"""API tests for creating bookings through the shared service."""
+
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from threading import Barrier
@@ -82,9 +84,9 @@ def test_invalid_or_non_object_booking_data_returns_400(booking_api, body):
     assert response.status_code == 400
     assert set(response.get_json()) == {"error"}
 
+
 def test_malformed_json_returns_standard_400_error(booking_api):
     client, *_ = booking_api
-
     response = client.post(
         "/api/bookings",
         data='{"room_id": 1, "title": ',
@@ -95,6 +97,7 @@ def test_malformed_json_returns_standard_400_error(booking_api):
     assert response.get_json() == {
         "error": "Request body must be a JSON object."
     }
+
 
 @pytest.mark.parametrize(
     ("field", "unknown_id"),
@@ -188,3 +191,85 @@ def test_competing_requests_cannot_double_book_a_slot(booking_api, monkeypatch):
         responses = list(pool.map(lambda _: submit(), range(2)))
     assert sorted(r.status_code for r in responses) == [201, 409]
     assert booking_count(path) == 1
+
+
+def _post_booking(client, room_id, employee_id, date, start, end):
+    return client.post(
+        "/api/bookings",
+        json=payload(
+            room_id,
+            employee_id,
+            start_at=f"{date}T{start}",
+            end_at=f"{date}T{end}",
+        ),
+    )
+
+
+def test_list_bookings_defaults_to_office_today_and_excludes_cancelled(booking_api):
+    client, room_id, employee_id, path = booking_api
+    earlier = _post_booking(
+        client, room_id, employee_id, "2030-01-15", "09:00", "10:00"
+    )
+    cancelled = _post_booking(
+        client, room_id, employee_id, "2030-01-15", "10:00", "11:00"
+    )
+    later = _post_booking(
+        client, room_id, employee_id, "2030-01-15", "11:00", "12:00"
+    )
+    next_day = _post_booking(
+        client, room_id, employee_id, "2030-01-16", "09:00", "10:00"
+    )
+    assert [earlier.status_code, cancelled.status_code, later.status_code, next_day.status_code] == [201] * 4
+
+    db = get_connection(path)
+    try:
+        cancelled_id = cancelled.get_json()["booking"]["id"]
+        db.execute(
+            "UPDATE bookings SET cancelled_at = ? WHERE id = ?",
+            ("2030-01-15T08:00:00", cancelled_id),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/bookings")
+    assert response.status_code == 200
+    assert [row["start_at"] for row in response.get_json()["bookings"]] == [
+        "2030-01-15T09:00",
+        "2030-01-15T11:00",
+    ]
+
+
+def test_list_bookings_accepts_blank_date_and_room_filter(booking_api):
+    client, room_id, employee_id, _ = booking_api
+    _post_booking(client, room_id, employee_id, "2030-01-15", "09:00", "10:00")
+    response = client.get(f"/api/bookings?date=&room_id={room_id}")
+
+    assert response.status_code == 200
+    assert len(response.get_json()["bookings"]) == 1
+    assert response.get_json()["bookings"][0]["room_id"] == room_id
+
+
+def test_list_bookings_unknown_room_returns_empty_list(booking_api):
+    client, *_ = booking_api
+    response = client.get("/api/bookings?date=2030-01-15&room_id=999")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"bookings": []}
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "date=2030-02-30",
+        "date=2030-01-15&room_id=0",
+        "date=2030-01-15&room_id=abc",
+    ],
+)
+def test_list_bookings_invalid_filters_return_standard_400(booking_api, query):
+    client, *_ = booking_api
+    response = client.get(f"/api/bookings?{query}")
+
+    assert response.status_code == 400
+    assert set(response.get_json()) == {"error"}
+

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Bookings | Meeting Room Booking{% endblock %}
+
+{% block content %}
+    <h2>Bookings</h2>
+
+    <section aria-labelledby="booking-list-heading">
+        <h3 id="booking-list-heading">Bookings for {{ selected_date }}</h3>
+        <form method="get" action="{{ url_for('bookings_page') }}">
+            <label for="filter-date">Date</label>
+            <input id="filter-date" name="date" type="date" value="{{ selected_date }}">
+
+            <label for="filter-room">Room</label>
+            <select id="filter-room" name="room_id">
+                <option value="">All rooms</option>
+                {% for room in rooms %}
+                    <option value="{{ room.id }}" {% if selected_room_id|string == room.id|string %}selected{% endif %}>
+                        {{ room.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">Show bookings</button>
+        </form>
+
+        {% if bookings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Time</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Room</th>
+                        <th scope="col">Booked by</th>
+                        <th scope="col">Attendees</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.start_at[11:] }}–{{ booking.end_at[11:] }}</td>
+                            <td>{{ booking.title }}</td>
+                            <td>{{ booking.room_name }}</td>
+                            <td>{{ booking.employee_name }}</td>
+                            <td>{{ booking.attendees }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No active bookings match this date and room. You can create one below.</p>
+        {% endif %}
+    </section>
+
+    <section aria-labelledby="create-booking-heading">
+        <h3 id="create-booking-heading">Book a room</h3>
+        <form method="post" action="{{ url_for('create_booking_page') }}">
+            <p>
+                <label for="room-id">Room</label>
+                <select id="room-id" name="room_id" required>
+                    <option value="">Choose a room</option>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}" {% if form_data.get('room_id', '') == room.id|string %}selected{% endif %}>
+                            {{ room.name }} (capacity {{ room.capacity }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </p>
+
+            <p>
+                <label for="employee-id">Booked by</label>
+                <select id="employee-id" name="employee_id" required>
+                    <option value="">Choose an employee</option>
+                    {% for employee in employees %}
+                        <option value="{{ employee.id }}" {% if form_data.get('employee_id', '') == employee.id|string %}selected{% endif %}>
+                            {{ employee.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </p>
+
+            <p>
+                <label for="title">Meeting title</label>
+                <input id="title" name="title" type="text" required value="{{ form_data.get('title', '') }}">
+            </p>
+
+            <p>
+                <label for="booking-date">Date</label>
+                <input id="booking-date" name="date" type="date" required value="{{ form_data.get('date', selected_date) }}">
+            </p>
+
+            <p>
+                <label for="start-time">Start time</label>
+                <input id="start-time" name="start_time" type="time" required value="{{ form_data.get('start_time', '') }}">
+            </p>
+
+            <p>
+                <label for="end-time">End time</label>
+                <input id="end-time" name="end_time" type="time" required value="{{ form_data.get('end_time', '') }}">
+            </p>
+
+            <p>
+                <label for="attendees">Attendees</label>
+                <input id="attendees" name="attendees" type="number" min="1" required value="{{ form_data.get('attendees', '') }}">
+            </p>
+
+            <button type="submit">Create booking</button>
+        </form>
+    </section>
+{% endblock %}
+
