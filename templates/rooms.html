@@ -11,17 +11,17 @@
         <form class="room-form" method="post" action="{{ url_for('rooms_page') }}">
             <div class="form-field">
                 <label for="name">Room name</label>
-                <input id="name" name="name" type="text" required>
+                <input id="name" name="name" type="text" value="{{ values.get('name', '') }}" required>
             </div>
 
             <div class="form-field">
                 <label for="floor">Floor</label>
-                <input id="floor" name="floor" type="text" required>
+                <input id="floor" name="floor" type="text" value="{{ values.get('floor', '') }}" required>
             </div>
 
             <div class="form-field">
                 <label for="capacity">Capacity</label>
-                <input id="capacity" name="capacity" type="number" min="1" required>
+                <input id="capacity" name="capacity" type="number" min="1" value="{{ values.get('capacity', '') }}" required>
             </div>
 
             <button type="submit">Add room</button>

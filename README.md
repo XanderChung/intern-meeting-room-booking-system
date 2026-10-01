@@ -65,7 +65,7 @@ Open <http://127.0.0.1:5000/health>. The expected response is:
 {"status": "ok"}
 ```
 
-The home route redirects to `/rooms`. The Rooms page displays each room's name, floor, capacity, and current availability, and includes a form for adding a room. A successful submission adds the room to the list; invalid input or a duplicate room name displays an error message. The employee directory is available at `/employees`, with its JSON list at `/api/employees`.
+The home route redirects to `/rooms`. The Rooms page displays each room's name, floor, capacity, and current availability, and includes a form for adding a room. A successful submission adds the room to the list; invalid input or a duplicate room name displays an error message. The employee directory is available at `/employees`. Its page includes a form for adding employees, and the API supports listing and creating employees at `/api/employees`.
 
 ## Run the tests
 
@@ -74,6 +74,7 @@ From the repository root:
 ```bash
 python -m pytest
 ```
+Latest full-suite run on 2026-10-01: **108 passed**.
 
 The suite covers shared API errors, timezone behavior, database initialization and seeding, employee and room list routes, flash messages, and booking behavior. Additional tests are still needed for features that have not yet been implemented.
 

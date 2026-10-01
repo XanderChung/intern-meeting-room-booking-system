@@ -65,30 +65,36 @@ def create_room_api():
 
 
 @app.route("/rooms", methods=["GET", "POST"])
+@app.route("/rooms", methods=["GET", "POST"])
 def rooms_page():
+    values = {"name": "", "floor": "", "capacity": ""}
+
     if request.method == "POST":
+        values = {
+            field: request.form.get(field, "")
+            for field in values
+        }
+
         try:
-            capacity = int(request.form.get("capacity", ""))
+            capacity = int(values["capacity"])
         except ValueError:
             flash("Capacity must be a whole number of at least 1.", "error")
-            return redirect(url_for("rooms_page"))
-
-        try:
-            room = services.create_room(
-                request.form.get("name"),
-                request.form.get("floor"),
-                capacity,
-                get_db(),
-            )
-        except APIError as error:
-            flash(error.message, "error")
         else:
-            flash(f"Room '{room['name']}' was added successfully.", "success")
-
-        return redirect(url_for("rooms_page"))
+            try:
+                room = services.create_room(
+                    values["name"],
+                    values["floor"],
+                    capacity,
+                    get_db(),
+                )
+            except APIError as error:
+                flash(error.message, "error")
+            else:
+                flash(f"Room '{room['name']}' was added successfully.", "success")
+                return redirect(url_for("rooms_page"), code=303)
 
     rooms = services.list_rooms(get_db())
-    return render_template("rooms.html", rooms=rooms)
+    return render_template("rooms.html", rooms=rooms, values=values)
 
 @app.get("/api/employees")
 def list_employees_api():

@@ -178,9 +178,13 @@ def test_rooms_form_shows_error_for_invalid_data(
     client, form_data, expected_message
 ):
     response = client.post("/rooms", data=form_data, follow_redirects=True)
+    page = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert expected_message in response.get_data(as_text=True)
+    assert expected_message in page
+
+    for value in form_data.values():
+        assert f'value="{value}"' in page
 
 
 def test_rooms_form_shows_error_for_duplicate_name(client):
@@ -196,3 +200,6 @@ def test_rooms_form_shows_error_for_duplicate_name(client):
     assert response.status_code == 200
     assert "already exists" in page
     assert page.count("<td>Boardroom</td>") == 1
+    assert 'value="boardroom"' in page
+    assert 'value="4"' in page
+    assert 'value="6"' in page
