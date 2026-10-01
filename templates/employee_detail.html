@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.name }} | Meeting Room Booking{% endblock %}
+
+{% block content %}
+    <p><a href="{{ url_for('employees_page') }}">Back to employees</a></p>
+
+    <h2>{{ employee.name }}</h2>
+
+    <dl>
+        <dt>Email</dt>
+        <dd>{{ employee.email }}</dd>
+
+        <dt>Department</dt>
+        <dd>{{ employee.department }}</dd>
+    </dl>
+
+    <h3>Upcoming bookings</h3>
+
+    {% if bookings %}
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Room</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Start</th>
+                    <th scope="col">End</th>
+                    <th scope="col">Attendees</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td>{{ booking.room_name }}</td>
+                        <td>{{ booking.title }}</td>
+                        <td>{{ booking.start_at }}</td>
+                        <td>{{ booking.end_at }}</td>
+                        <td>{{ booking.attendees }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No upcoming bookings for this employee.</p>
+    {% endif %}
+{% endblock %}

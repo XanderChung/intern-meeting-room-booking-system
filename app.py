@@ -79,6 +79,14 @@ def create_employee_api():
 
     return {"employee": employee}, 201
 
+@app.get("/api/employees/<int:employee_id>")
+def employee_detail_api(employee_id):
+    """Return an employee and their upcoming active bookings."""
+    return services.get_employee_with_upcoming_bookings(
+        employee_id=employee_id,
+        db_connection=get_db(),
+    )
+
 @app.post("/employees")
 def create_employee_page():
     values = {
@@ -130,6 +138,19 @@ def employees_page():
     employees = services.list_employees(get_db())
     return render_template("employees.html", employees=employees)
 
+@app.get("/employees/<int:employee_id>")
+def employee_detail_page(employee_id):
+    """Show an employee and their upcoming active bookings."""
+    details = services.get_employee_with_upcoming_bookings(
+        employee_id=employee_id,
+        db_connection=get_db(),
+    )
+
+    return render_template(
+        "employee_detail.html",
+        employee=details["employee"],
+        bookings=details["bookings"],
+    )
 
 @app.get("/health")
 def health_check():
