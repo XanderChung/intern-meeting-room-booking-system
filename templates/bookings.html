@@ -32,6 +32,7 @@
                         <th scope="col">Room</th>
                         <th scope="col">Booked by</th>
                         <th scope="col">Attendees</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,6 +43,15 @@
                             <td>{{ booking.room_name }}</td>
                             <td>{{ booking.employee_name }}</td>
                             <td>{{ booking.attendees }}</td>
+                            <td>
+                                {% if booking.start_at > office_now %}
+                                    <form method="post" action="{{ url_for('cancel_booking_page', booking_id=booking.id) }}">
+                                        <input type="hidden" name="date" value="{{ selected_date }}">
+                                        <input type="hidden" name="room_id" value="{{ selected_room_id }}">
+                                        <button type="submit">Cancel</button>
+                                    </form>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
