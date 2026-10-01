@@ -65,7 +65,6 @@ def create_room_api():
 
 
 @app.route("/rooms", methods=["GET", "POST"])
-@app.route("/rooms", methods=["GET", "POST"])
 def rooms_page():
     values = {"name": "", "floor": "", "capacity": ""}
 
@@ -174,6 +173,16 @@ def create_booking_api():
     return {"booking": booking}, 201
 
 
+@app.get("/api/reports/top-rooms")
+def top_rooms_api():
+    """Return rooms ranked by their active booking count."""
+    return {
+        "rooms": services.get_top_rooms(
+            get_db(), n=request.args.get("n", default=5)
+        )
+    }
+
+
 @app.get("/api/bookings")
 def list_bookings_api():
     """List active bookings using the shared booking-list service."""
@@ -220,6 +229,7 @@ def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=Tru
         "bookings": bookings,
         "employees": services.list_employees(get_db()),
         "rooms": services.list_rooms(get_db()),
+        "top_rooms": services.get_top_rooms(get_db()),
         "selected_date": selected_date,
         "selected_room_id": selected_room_id,
         "office_now": office_now.strftime("%Y-%m-%dT%H:%M"),

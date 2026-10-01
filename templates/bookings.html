@@ -61,6 +61,35 @@
         {% endif %}
     </section>
 
+    <section aria-labelledby="top-rooms-heading">
+        <h3 id="top-rooms-heading">Top 5 rooms</h3>
+        {% if top_rooms %}
+            <table id="top-rooms-table">
+                <caption>Rooms ranked by active booking count</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Room</th>
+                        <th scope="col">Floor</th>
+                        <th scope="col">Capacity</th>
+                        <th scope="col">Bookings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in top_rooms %}
+                        <tr>
+                            <td>{{ room.name }}</td>
+                            <td>{{ room.floor }}</td>
+                            <td>{{ room.capacity }}</td>
+                            <td>{{ room.booking_count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No rooms to rank yet.</p>
+        {% endif %}
+    </section>
+
     <section aria-labelledby="create-booking-heading">
         <h3 id="create-booking-heading">Book a room</h3>
         <form method="post" action="{{ url_for('create_booking_page') }}">
