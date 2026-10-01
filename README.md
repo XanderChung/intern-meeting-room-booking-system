@@ -65,7 +65,7 @@ Open <http://127.0.0.1:5000/health>. The expected response is:
 {"status": "ok"}
 ```
 
-The home route redirects to `/rooms`, which is currently a placeholder page. The employee directory is available at `/employees` and its JSON list is available at `/api/employees` once the employee-list PR is merged.
+The home route redirects to `/rooms`, which lists rooms and their current availability. The employee directory at `/employees` supports employee creation and links to individual detail pages showing upcoming active bookings. The Bookings page at `/bookings` supports listing, filtering, and creating bookings.
 
 ## Run the tests
 
@@ -75,7 +75,9 @@ From the repository root:
 python -m pytest
 ```
 
-The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, and employee-list routes. Tests for employee details, employee creation, room and booking routes, and remaining business-rule edge cases are still needed.
+The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
+
+Latest reported local run for the employee-detail branch on 2026-10-01: **98 passed in 2.22s**. This is local verification, not a GitHub workflow result. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
 
 ## API contract and errors
 
@@ -85,7 +87,7 @@ The authoritative endpoint, request, response, schema, validation, and status-co
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The employee list API is implemented; employee detail and create APIs, plus room and booking APIs, remain to be wired.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Employee APIs support `GET /api/employees`, `POST /api/employees`, and `GET /api/employees/{id}`. Missing employees return JSON errors through the API and an HTML error notice with status 404 through the detail page. Room listing and booking listing/creation APIs are also implemented.
 
 ## Team responsibilities
 
@@ -111,15 +113,16 @@ Each student owns their feature end to end: service rules, API, page, and tests.
 
 | Area | Present | Still needed |
 |---|---|---|
-| Flask app | `app.py` registers shared error handlers, serves `/health`, redirects `/` to `/rooms`, renders the placeholder Rooms page, and wires the employee list route. | Add remaining employee, room, and booking routes. |
-| Service layer | `backend/services.py` has shared create/list/detail, booking, cancellation, and report functions. | Integrate them with routes and add automated coverage for their rules. |
-| API | The contract is documented in `docs/api.md`; `GET /api/employees` is implemented. | Add employee detail/create, Rooms, and Bookings/Reports endpoints. |
-| Database | SQLite schema, per-connection foreign keys, repeatable initialization, and sample seeding are implemented. | None for the shared database foundation. |
-| Pages | A base template, stylesheet, placeholder Rooms page, and employee directory page are present. | Add employee detail/create, Rooms, and Bookings pages. |
-| Tests | Shared errors, timezone handling, database setup/seeding, and employee-list routes have coverage. | Run/extend the employee checks and add the remaining route and business-rule tests. |
+| Employees | List and creation APIs/page; detail API/page; upcoming bookings ordered by start; HTML and JSON missing-employee handling; automated and browser checks. | Final integrated acceptance checks. |
+| Rooms | Room list API/page with current availability. | Room creation changes are in Angad's separate PR; detail routes still need integration. |
+| Bookings | Listing/filtering and creation APIs/page using shared services. | Cancellation and reports route integration, plus final acceptance checks. |
+| Shared UI | Base layout, navigation, categorized success/error notices. | Coordinate consistent form and table styling after the Rooms PR merges. |
+| Database | SQLite schema, foreign keys, repeatable initialization, and sample seeding. | Final fresh-clone verification. |
+| Tests | Employee features, room listing, booking routes, shared errors, timezone, database, seeding, and flash messages. | Extend coverage as remaining features land and rerun the full suite. |
 
 The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
 ## Known limitations
 
-A clean clone cannot yet complete the browser acceptance flow. Employee details/creation, Rooms and Bookings features, and some automated rule coverage are still in progress. GitHub branch protection must be configured separately; the written workflow rules do not enforce it.
+The full browser acceptance flow still requires remaining Rooms, cancellation, and reporting work, shared UI checks, and fresh-clone verification. Employee listing, creation, and details are implemented. GitHub branch protection and workflow configuration must be checked separately; written collaboration rules do not enforce them.
+
