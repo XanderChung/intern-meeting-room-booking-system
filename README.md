@@ -65,7 +65,7 @@ Open <http://127.0.0.1:5000/health>. The expected response is:
 {"status": "ok"}
 ```
 
-The home route redirects to `/rooms`, which lists rooms and their current availability. The employee directory at `/employees` supports employee creation and links to individual detail pages showing upcoming active bookings. The Bookings page at `/bookings` supports listing, filtering, and creating bookings.
+The home route redirects to `/rooms`, which lists rooms and their current availability and includes a room-creation form. The employee directory at `/employees` supports employee creation and links to individual detail pages showing upcoming active bookings. The Bookings page at `/bookings` supports listing, filtering, and creating bookings.
 
 ## Run the tests
 
@@ -75,9 +75,15 @@ From the repository root:
 python -m pytest
 ```
 
-The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
+The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing and creation, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
 
-Latest reported local run for the employee-detail branch on 2026-10-01: **98 passed in 2.22s**. This is local verification, not a GitHub workflow result. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
+Latest reported local run for the shared UI branch on 2026-10-01: **98 passed in 2.11s**. This is local verification, not a GitHub workflow result. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
+
+## Browser verification
+
+- Employee creation: success and duplicate-email feedback were checked, including retained inputs on errors.
+- Employee details: checked populated upcoming bookings, the detail API, and the HTML missing-employee page with status 404.
+- Shared UI: opened Rooms and Employees and confirmed matching input widths, spacing, blue buttons, and visible table headers. Screenshots are included with the PR.
 
 ## API contract and errors
 
@@ -87,7 +93,7 @@ The authoritative endpoint, request, response, schema, validation, and status-co
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Employee APIs support `GET /api/employees`, `POST /api/employees`, and `GET /api/employees/{id}`. Missing employees return JSON errors through the API and an HTML error notice with status 404 through the detail page. Room listing and booking listing/creation APIs are also implemented.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Employee APIs support `GET /api/employees`, `POST /api/employees`, and `GET /api/employees/{id}`. Missing employees return JSON errors through the API and an HTML error notice with status 404 through the detail page. Room APIs support listing and creation at `/api/rooms`. Booking APIs support listing and creation at `/api/bookings`.
 
 ## Team responsibilities
 
@@ -114,15 +120,16 @@ Each student owns their feature end to end: service rules, API, page, and tests.
 | Area | Present | Still needed |
 |---|---|---|
 | Employees | List and creation APIs/page; detail API/page; upcoming bookings ordered by start; HTML and JSON missing-employee handling; automated and browser checks. | Final integrated acceptance checks. |
-| Rooms | Room list API/page with current availability. | Room creation changes are in Angad's separate PR; detail routes still need integration. |
+| Rooms | Room listing and creation APIs/page with current availability, validation, and retained form values on errors. | Room detail routes still need integration. |
 | Bookings | Listing/filtering and creation APIs/page using shared services. | Cancellation and reports route integration, plus final acceptance checks. |
-| Shared UI | Base layout, navigation, categorized success/error notices. | Coordinate consistent form and table styling after the Rooms PR merges. |
+| Shared UI | Base layout, navigation, and categorized success/error notices. This branch adds matching room/employee form styling, wrapping navigation, keyboard focus indicators, and shared table styling while preserving existing room classes. | Teammate review and merge of this branch; remaining integrated UI checks. |
 | Database | SQLite schema, foreign keys, repeatable initialization, and sample seeding. | Final fresh-clone verification. |
-| Tests | Employee features, room listing, booking routes, shared errors, timezone, database, seeding, and flash messages. | Extend coverage as remaining features land and rerun the full suite. |
+| Tests | Employee features, room listing and creation, booking routes, shared errors, timezone, database, seeding, and flash messages. | Extend coverage as remaining features land and rerun the full suite. |
 
 The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
 ## Known limitations
 
-The full browser acceptance flow still requires remaining Rooms, cancellation, and reporting work, shared UI checks, and fresh-clone verification. Employee listing, creation, and details are implemented. GitHub branch protection and workflow configuration must be checked separately; written collaboration rules do not enforce them.
+The full browser acceptance flow still requires room details, cancellation, reporting, remaining shared UI checks, and fresh-clone verification. Shared styling in this branch has been checked on the Rooms and Employees pages; the Bookings form has not been restyled in this PR. Employee listing, creation, and details are implemented. GitHub branch protection and workflow configuration must be checked separately; written collaboration rules do not enforce them.
+
 
