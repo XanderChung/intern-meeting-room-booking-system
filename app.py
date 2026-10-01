@@ -141,10 +141,18 @@ def employees_page():
 @app.get("/employees/<int:employee_id>")
 def employee_detail_page(employee_id):
     """Show an employee and their upcoming active bookings."""
-    details = services.get_employee_with_upcoming_bookings(
-        employee_id=employee_id,
-        db_connection=get_db(),
-    )
+    try:
+        details = services.get_employee_with_upcoming_bookings(
+            employee_id=employee_id,
+            db_connection=get_db(),
+        )
+    except APIError as error:
+        flash(error.message, "error")
+        return render_template(
+            "employee_detail.html",
+            employee=None,
+            bookings=[],
+        ), error.status_code
 
     return render_template(
         "employee_detail.html",

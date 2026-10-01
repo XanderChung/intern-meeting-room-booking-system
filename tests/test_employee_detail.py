@@ -44,7 +44,14 @@ def test_employee_detail_missing_employee(client):
     }
 
     page = client.get("/employees/999999")
+
     assert page.status_code == 404
+    assert page.mimetype == "text/html"
+
+    html = page.get_data(as_text=True)
+    assert "Employee 999999 does not exist." in html
+    assert "notice--error" in html
+    assert 'href="/employees"' in html
 
 def test_employee_detail_filters_and_orders_bookings(client, monkeypatch):
     fixed_now = datetime(2026, 10, 1, 10, 0)
