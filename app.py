@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, flash, g, redirect, render_template, request, url_for
+from flask import Flask, g, redirect, render_template, url_for, request, jsonify, flash
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import APIError, InvalidInputError, register_error_handlers
+from errors import register_error_handlers, InvalidInputError, APIError
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -48,11 +48,52 @@ def home():
 def rooms_api():
     return {"rooms": services.list_rooms(get_db())}
 
+@app.post("/api/rooms")
+def create_room_api():
+    data = request.get_json(silent=True)
 
-@app.get("/rooms")
+    if not isinstance(data, dict):
+        raise InvalidInputError("Request body must be a JSON object.")
+
+    room = services.create_room(
+        data.get("name"),
+        data.get("floor"),
+        data.get("capacity"),
+        get_db(),
+    )
+    return jsonify(room=room), 201
+
+
+@app.route("/rooms", methods=["GET", "POST"])
 def rooms_page():
+    values = {"name": "", "floor": "", "capacity": ""}
+
+    if request.method == "POST":
+        values = {
+            field: request.form.get(field, "")
+            for field in values
+        }
+
+        try:
+            capacity = int(values["capacity"])
+        except ValueError:
+            flash("Capacity must be a whole number of at least 1.", "error")
+        else:
+            try:
+                room = services.create_room(
+                    values["name"],
+                    values["floor"],
+                    capacity,
+                    get_db(),
+                )
+            except APIError as error:
+                flash(error.message, "error")
+            else:
+                flash(f"Room '{room['name']}' was added successfully.", "success")
+                return redirect(url_for("rooms_page"), code=303)
+
     rooms = services.list_rooms(get_db())
-    return render_template("rooms.html", rooms=rooms)
+    return render_template("rooms.html", rooms=rooms, values=values)
 
 @app.get("/api/employees")
 def list_employees_api():
@@ -132,6 +173,16 @@ def create_booking_api():
     return {"booking": booking}, 201
 
 
+@app.get("/api/reports/top-rooms")
+def top_rooms_api():
+    """Return rooms ranked by their active booking count."""
+    return {
+        "rooms": services.get_top_rooms(
+            get_db(), n=request.args.get("n", default=5)
+        )
+    }
+
+
 @app.get("/api/bookings")
 def list_bookings_api():
     """List active bookings using the shared booking-list service."""
@@ -142,6 +193,13 @@ def list_bookings_api():
             room_id=request.args.get("room_id"),
         )
     }
+
+
+@app.post("/api/bookings/<int:booking_id>/cancel")
+def cancel_booking_api(booking_id):
+    """Cancel a booking through the shared cancellation service."""
+    booking = services.cancel_booking(booking_id, db_connection=get_db())
+    return {"booking": booking}
 
 
 def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=True):
@@ -171,8 +229,10 @@ def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=Tru
         "bookings": bookings,
         "employees": services.list_employees(get_db()),
         "rooms": services.list_rooms(get_db()),
+        "top_rooms": services.get_top_rooms(get_db()),
         "selected_date": selected_date,
         "selected_room_id": selected_room_id,
+        "office_now": office_now.strftime("%Y-%m-%dT%H:%M"),
     }
 
 
@@ -223,6 +283,25 @@ def create_booking_page():
     return redirect(url_for("bookings_page", date=date_value))
 
 
+@app.post("/bookings/<int:booking_id>/cancel")
+def cancel_booking_page(booking_id):
+    """Cancel a booking from the page and return to its current filters."""
+    date_value = request.form.get("date", "")
+    room_id = request.form.get("room_id", "")
+
+    try:
+        booking = services.cancel_booking(booking_id, db_connection=get_db())
+    except APIError as error:
+        flash(error.message, "error")
+    else:
+        flash(f'Booking "{booking["title"]}" was cancelled.', "success")
+
+    return redirect(
+        url_for("bookings_page", date=date_value, room_id=room_id),
+        code=303,
+    )
+
+
 @app.get("/employees")
 def employees_page():
     """Render the employee directory."""
@@ -259,4 +338,3 @@ def health_check():
 if __name__ == "__main__":
     init_db(app.config["DATABASE"])
     app.run()
-

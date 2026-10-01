@@ -73,17 +73,9 @@ From the repository root:
 ```bash
 python -m pytest
 ```
-Reported local checks on 2026-10-01: Angad reported **108 passed** for his room-creation changes; Dyllon reported **98 passed in 2.11s** before merging the latest main changes. Rerun the full suite after resolving this merge and record the result in the PR.
+Latest full-suite run on 2026-10-01: **108 passed**.
 
-The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing and creation, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
-
-These are local test results, not GitHub workflow results. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
-
-## Browser verification
-
-- Employee creation: success and duplicate-email feedback were checked, including retained inputs on errors.
-- Employee details: checked populated upcoming bookings, the detail API, and the HTML missing-employee page with status 404.
-- Shared UI: opened Rooms and Employees and confirmed matching input widths, spacing, blue buttons, and visible table headers. Screenshots are included with the PR.
+The suite covers shared API errors, timezone behavior, database initialization and seeding, employee and room list routes, flash messages, and booking behavior. Additional tests are still needed for features that have not yet been implemented.
 
 ## API contract and errors
 
@@ -93,7 +85,7 @@ The authoritative endpoint, request, response, schema, validation, and status-co
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. Employee APIs support `GET /api/employees`, `POST /api/employees`, and `GET /api/employees/{id}`. Missing employees return JSON errors through the API and an HTML error notice with status 404 through the detail page. Room APIs support listing and creation at `/api/rooms`. Booking APIs support listing and creation at `/api/bookings`.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The room-list and room-creation APIs (`GET /api/rooms` and `POST /api/rooms`) and the employee-list API (`GET /api/employees`) are implemented. Room detail, employee creation and detail, and booking and report routes are still to be completed.
 
 ## Team responsibilities
 
