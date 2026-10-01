@@ -50,7 +50,6 @@ python seed.py
 ```
 You can run the seed script more than once. It won’t duplicate sample rooms or employees, and it preserves custom records already in the database
 
-
 ## Run the application
 
 From the repository root, with the virtual environment active:
@@ -74,10 +73,11 @@ From the repository root:
 ```bash
 python -m pytest
 ```
+Reported local checks on 2026-10-01: Angad reported **108 passed** for his room-creation changes; Dyllon reported **98 passed in 2.11s** before merging the latest main changes. Rerun the full suite after resolving this merge and record the result in the PR.
 
 The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, room listing and creation, booking routes, and employee listing, creation, and details. Employee tests cover validation, duplicate emails through both API and form submissions, retained form inputs, HTML missing-employee errors, and upcoming-booking filtering and ordering.
 
-Latest reported local run for the shared UI branch on 2026-10-01: **98 passed in 2.11s**. This is local verification, not a GitHub workflow result. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
+These are local test results, not GitHub workflow results. On Windows, if pytest cannot access its default temporary directory, run `python -m pytest -q --basetemp=.pytest_tmp_b2`; this temporary directory must remain ignored by Git.
 
 ## Browser verification
 
