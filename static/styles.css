@@ -14,6 +14,7 @@ header {
 
 nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
 }
 
@@ -39,4 +40,104 @@ main {
 .notice--error {
     color: #721c24;
     background-color: #f8d7da;
+<<<<<<< Updated upstream
+=======
+}
+
+/* Shared room and employee form sections */
+.room-form-section,
+.form-section {
+    max-width: 32rem;
+    margin: 1.5rem 0 2rem;
+}
+
+/* Shared form layout */
+.room-form,
+.data-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.form-field label {
+    font-weight: 600;
+}
+
+.form-field input,
+.form-field select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #aeb7c2;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    font: inherit;
+}
+
+.room-form input:focus-visible,
+.room-form select:focus-visible,
+.data-form input:focus-visible,
+.data-form select:focus-visible {
+    border-color: #1756a9;
+    outline: 2px solid #c9dcf7;
+    outline-offset: 1px;
+}
+
+.room-form button,
+.data-form button {
+    justify-self: start;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-radius: 4px;
+    background: #1756a9;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.room-form button:hover,
+.data-form button:hover {
+    background: #10427f;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #1756a9;
+    outline-offset: 2px;
+}
+
+/* Shared tables */
+table {
+    width: 100%;
+    margin-top: 1.25rem;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+th,
+td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #d7dce2;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+th {
+    background: #edf1f6;
+}
+
+@media (max-width: 600px) {
+    th,
+    td {
+        padding: 0.55rem 0.5rem;
+    }
+>>>>>>> Stashed changes
 }

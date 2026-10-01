@@ -5,30 +5,34 @@
 {% block content %}
     <h2>Employees</h2>
 
-    <h3>Add employee</h3>
     {% set values = values | default({}) %}
 
-    <form method="post" action="{{ url_for('create_employee_page') }}">
-        <p>
-            <label for="employee-name">Name</label><br>
-            <input id="employee-name" name="name" type="text"
-                   value="{{ values.get('name', '') }}" required>
-        </p>
+    <section class="form-section" aria-labelledby="add-employee-heading">
+        <h3 id="add-employee-heading">Add employee</h3>
 
-        <p>
-            <label for="employee-email">Email</label><br>
-            <input id="employee-email" name="email" type="text"
-                   value="{{ values.get('email', '') }}" required>
-        </p>
+        <form class="data-form" method="post"
+              action="{{ url_for('create_employee_page') }}">
+            <div class="form-field">
+                <label for="employee-name">Name</label>
+                <input id="employee-name" name="name" type="text"
+                       value="{{ values.get('name', '') }}" required>
+            </div>
 
-        <p>
-            <label for="employee-department">Department</label><br>
-            <input id="employee-department" name="department" type="text"
-                   value="{{ values.get('department', '') }}" required>
-        </p>
+            <div class="form-field">
+                <label for="employee-email">Email</label>
+                <input id="employee-email" name="email" type="text"
+                       value="{{ values.get('email', '') }}" required>
+            </div>
 
-        <button type="submit">Add employee</button>
-    </form>
+            <div class="form-field">
+                <label for="employee-department">Department</label>
+                <input id="employee-department" name="department" type="text"
+                       value="{{ values.get('department', '') }}" required>
+            </div>
+
+            <button type="submit">Add employee</button>
+        </form>
+    </section>
 
     {% if employees %}
         <table>
