@@ -144,6 +144,13 @@ def list_bookings_api():
     }
 
 
+@app.post("/api/bookings/<int:booking_id>/cancel")
+def cancel_booking_api(booking_id):
+    """Cancel a booking through the shared cancellation service."""
+    booking = services.cancel_booking(booking_id, db_connection=get_db())
+    return {"booking": booking}
+
+
 def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=True):
     """Get page data and fall back to office today for invalid page filters."""
     office_now = services._now()
@@ -173,6 +180,7 @@ def _booking_page_values(date_value=None, room_id=None, *, show_filter_error=Tru
         "rooms": services.list_rooms(get_db()),
         "selected_date": selected_date,
         "selected_room_id": selected_room_id,
+        "office_now": office_now.strftime("%Y-%m-%dT%H:%M"),
     }
 
 
@@ -221,6 +229,25 @@ def create_booking_page():
 
     flash(f"Booking \"{booking['title']}\" was created.", "success")
     return redirect(url_for("bookings_page", date=date_value))
+
+
+@app.post("/bookings/<int:booking_id>/cancel")
+def cancel_booking_page(booking_id):
+    """Cancel a booking from the page and return to its current filters."""
+    date_value = request.form.get("date", "")
+    room_id = request.form.get("room_id", "")
+
+    try:
+        booking = services.cancel_booking(booking_id, db_connection=get_db())
+    except APIError as error:
+        flash(error.message, "error")
+    else:
+        flash(f'Booking "{booking["title"]}" was cancelled.', "success")
+
+    return redirect(
+        url_for("bookings_page", date=date_value, room_id=room_id),
+        code=303,
+    )
 
 
 @app.get("/employees")

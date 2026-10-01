@@ -139,3 +139,90 @@ def test_invalid_page_filter_shows_error_and_falls_back_to_office_today(bookings
     assert b'class="notice notice--error"' in response.data
     assert b"Bookings for 2030-01-15" in response.data
 
+
+
+
+def test_cancel_action_only_appears_for_upcoming_bookings(bookings_page):
+    client, room_id, employee_id, db_path = bookings_page
+    upcoming = _make_booking(
+        db_path, room_id, employee_id, "2030-01-15T10:00", "2030-01-15T11:00"
+    )
+
+    db = get_connection(db_path)
+    try:
+        cursor = db.execute(
+            """
+            INSERT INTO bookings
+                (room_id, employee_id, title, start_at, end_at, attendees)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                room_id,
+                employee_id,
+                "Already started",
+                "2030-01-15T06:00",
+                "2030-01-15T07:00",
+                1,
+            ),
+        )
+        started_id = cursor.lastrowid
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/bookings?date=2030-01-15")
+    body = response.get_data(as_text=True)
+
+    assert f'/bookings/{upcoming["id"]}/cancel' in body
+    assert f'/bookings/{started_id}/cancel' not in body
+
+
+def test_page_cancellation_shows_success_and_allows_rebooking(bookings_page):
+    client, room_id, employee_id, db_path = bookings_page
+    booking = _make_booking(
+        db_path, room_id, employee_id, "2030-01-15T10:00", "2030-01-15T11:00"
+    )
+
+    cancelled = client.post(
+        f'/bookings/{booking["id"]}/cancel',
+        data={"date": "2030-01-15", "room_id": str(room_id)},
+        follow_redirects=True,
+    )
+
+    assert cancelled.status_code == 200
+    assert b'class="notice notice--success"' in cancelled.data
+    assert 'was cancelled.' in unescape(cancelled.get_data(as_text=True))
+    assert b"No active bookings match this date and room." in cancelled.data
+
+    rebooked = client.post(
+        "/bookings",
+        data={
+            "room_id": str(room_id),
+            "employee_id": str(employee_id),
+            "title": "Rescheduled",
+            "date": "2030-01-15",
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "attendees": "3",
+        },
+        follow_redirects=True,
+    )
+    assert rebooked.status_code == 200
+    assert b'class="notice notice--success"' in rebooked.data
+    assert b"Rescheduled" in rebooked.data
+
+
+def test_stale_page_cancellation_shows_clear_error(bookings_page):
+    client, room_id, employee_id, db_path = bookings_page
+    booking = _make_booking(
+        db_path, room_id, employee_id, "2030-01-15T10:00", "2030-01-15T11:00"
+    )
+    data = {"date": "2030-01-15", "room_id": str(room_id)}
+    action = f'/bookings/{booking["id"]}/cancel'
+
+    assert client.post(action, data=data).status_code == 303
+    stale = client.post(action, data=data, follow_redirects=True)
+
+    assert stale.status_code == 200
+    assert b'class="notice notice--error"' in stale.data
+    assert b"already been cancelled" in stale.data
