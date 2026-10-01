@@ -277,7 +277,7 @@ def test_list_bookings_invalid_filters_return_standard_400(booking_api, query):
 
 
 def test_cancel_booking_returns_updated_envelope_and_releases_slot(booking_api):
-    client, room_id, employee_id, _ = booking_api
+    client, room_id, employee_id, path = booking_api
     created = client.post("/api/bookings", json=payload(room_id, employee_id))
     booking_id = created.get_json()["booking"]["id"]
 
@@ -291,6 +291,12 @@ def test_cancel_booking_returns_updated_envelope_and_releases_slot(booking_api):
     assert client.get("/api/bookings?date=2030-01-15").get_json() == {
         "bookings": []
     }
+
+    db = get_connection(path)
+    try:
+        assert services.get_top_rooms(db)[0]["booking_count"] == 0
+    finally:
+        db.close()
 
     rebooked = client.post(
         "/api/bookings", json=payload(room_id, employee_id)
