@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room.name }}{% endblock %}
+
+{% block content %}
+    <h2>{{ room.name }}</h2>
+
+    <p>Floor: {{ room.floor }}</p>
+    <p>Capacity: {{ room.capacity }}</p>
+
+    <form method="get" action="{{ url_for('room_detail_page', room_id=room.id) }}">
+        <label for="date">Choose a date</label>
+        <input id="date" name="date" type="date" value="{{ date }}" required>
+        <button type="submit">Show bookings</button>
+    </form>
+
+    <h3>Bookings for {{ date }}</h3>
+
+    {% if bookings %}
+    <table class="bookings-table">
+        <thead>
+            <tr>
+                <th>Meeting</th>
+                <th>Start</th>
+                <th>End</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+                <tr>
+                    <td>{{ booking.title }}</td>
+                    <td>{{ booking.start_at[11:16] }}</td>
+                    <td>{{ booking.end_at[11:16] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No bookings for this date.</p>
+{% endif %}
+{% endblock %}
