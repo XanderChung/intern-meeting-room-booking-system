@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, flash, g, redirect, render_template, request, url_for
+from flask import Flask, g, redirect, render_template, url_for, request, jsonify, flash
 
 from backend import services
 from backend.db import DATABASE_PATH, get_connection, init_db
-from errors import APIError, InvalidInputError, register_error_handlers
+from errors import register_error_handlers, InvalidInputError, APIError
 
 # Read the .env file and load needed settings.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -48,11 +48,53 @@ def home():
 def rooms_api():
     return {"rooms": services.list_rooms(get_db())}
 
+@app.post("/api/rooms")
+def create_room_api():
+    data = request.get_json(silent=True)
 
-@app.get("/rooms")
+    if not isinstance(data, dict):
+        raise InvalidInputError("Request body must be a JSON object.")
+
+    room = services.create_room(
+        data.get("name"),
+        data.get("floor"),
+        data.get("capacity"),
+        get_db(),
+    )
+    return jsonify(room=room), 201
+
+
+@app.route("/rooms", methods=["GET", "POST"])
+@app.route("/rooms", methods=["GET", "POST"])
 def rooms_page():
+    values = {"name": "", "floor": "", "capacity": ""}
+
+    if request.method == "POST":
+        values = {
+            field: request.form.get(field, "")
+            for field in values
+        }
+
+        try:
+            capacity = int(values["capacity"])
+        except ValueError:
+            flash("Capacity must be a whole number of at least 1.", "error")
+        else:
+            try:
+                room = services.create_room(
+                    values["name"],
+                    values["floor"],
+                    capacity,
+                    get_db(),
+                )
+            except APIError as error:
+                flash(error.message, "error")
+            else:
+                flash(f"Room '{room['name']}' was added successfully.", "success")
+                return redirect(url_for("rooms_page"), code=303)
+
     rooms = services.list_rooms(get_db())
-    return render_template("rooms.html", rooms=rooms)
+    return render_template("rooms.html", rooms=rooms, values=values)
 
 @app.get("/api/employees")
 def list_employees_api():
@@ -286,4 +328,3 @@ def health_check():
 if __name__ == "__main__":
     init_db(app.config["DATABASE"])
     app.run()
-

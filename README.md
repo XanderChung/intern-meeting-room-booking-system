@@ -65,7 +65,7 @@ Open <http://127.0.0.1:5000/health>. The expected response is:
 {"status": "ok"}
 ```
 
-The home route redirects to `/rooms`, which is currently a placeholder page. The employee directory is available at `/employees` and its JSON list is available at `/api/employees` once the employee-list PR is merged.
+The home route redirects to `/rooms`. The Rooms page displays each room's name, floor, capacity, and current availability, and includes a form for adding a room. A successful submission adds the room to the list; invalid input or a duplicate room name displays an error message. The employee directory is available at `/employees`. Its page includes a form for adding employees, and the API supports listing and creating employees at `/api/employees`.
 
 ## Run the tests
 
@@ -74,8 +74,9 @@ From the repository root:
 ```bash
 python -m pytest
 ```
+Latest full-suite run on 2026-10-01: **108 passed**.
 
-The suite covers shared API errors, the Asia/Jakarta clock, database initialization and seeding, and employee-list routes. Tests for employee details, employee creation, room and booking routes, and remaining business-rule edge cases are still needed.
+The suite covers shared API errors, timezone behavior, database initialization and seeding, employee and room list routes, flash messages, and booking behavior. Additional tests are still needed for features that have not yet been implemented.
 
 ## API contract and errors
 
@@ -85,7 +86,7 @@ The authoritative endpoint, request, response, schema, validation, and status-co
 {"error": "Human-readable message."}
 ```
 
-The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The employee list API is implemented; employee detail and create APIs, plus room and booking APIs, remain to be wired.
+The shared exceptions in `errors.py` map invalid input to 400, missing resources to 404, and business-rule conflicts to 409. `app.py` registers the handlers, so Flask-generated API errors use the same JSON envelope while ordinary page errors remain HTML. The room-list and room-creation APIs (`GET /api/rooms` and `POST /api/rooms`) and the employee-list API (`GET /api/employees`) are implemented. Room detail, employee creation and detail, and booking and report routes are still to be completed.
 
 ## Team responsibilities
 
@@ -111,15 +112,16 @@ Each student owns their feature end to end: service rules, API, page, and tests.
 
 | Area | Present | Still needed |
 |---|---|---|
-| Flask app | `app.py` registers shared error handlers, serves `/health`, redirects `/` to `/rooms`, renders the placeholder Rooms page, and wires the employee list route. | Add remaining employee, room, and booking routes. |
+| Flask app | `app.py` registers shared error handlers, serves `/health`, redirects `/` to `/rooms`, and serves the Rooms and employee list routes. | Add room detail, remaining employee, booking, and report routes. |
+| API | The contract is documented in `docs/api.md`; `GET /api/rooms`, `POST /api/rooms`, and `GET /api/employees` are implemented. | Add room detail, employee creation/detail, and Bookings/Reports endpoints. |
+| Pages | A base template, stylesheet, Rooms list and creation form, and employee directory page are present. | Add room detail, employee creation/detail, and Bookings pages. |
+| Tests | Shared errors, timezone handling, database setup/seeding, room and employee routes, flash messages, and booking behavior have coverage. | Add tests for remaining routes and business-rule edge cases as those features are implemented. |
 | Service layer | `backend/services.py` has shared create/list/detail, booking, cancellation, and report functions. | Integrate them with routes and add automated coverage for their rules. |
-| API | The contract is documented in `docs/api.md`; `GET /api/employees` is implemented. | Add employee detail/create, Rooms, and Bookings/Reports endpoints. |
 | Database | SQLite schema, per-connection foreign keys, repeatable initialization, and sample seeding are implemented. | None for the shared database foundation. |
-| Pages | A base template, stylesheet, placeholder Rooms page, and employee directory page are present. | Add employee detail/create, Rooms, and Bookings pages. |
-| Tests | Shared errors, timezone handling, database setup/seeding, and employee-list routes have coverage. | Run/extend the employee checks and add the remaining route and business-rule tests. |
+
 
 The SQL schema in `docs/api.md` is the shared starting point for database setup. Write services own their transactions and expect an SQLite connection with no active transaction. See the contract for booking rules and report semantics.
 
 ## Known limitations
 
-A clean clone cannot yet complete the browser acceptance flow. Employee details/creation, Rooms and Bookings features, and some automated rule coverage are still in progress. GitHub branch protection must be configured separately; the written workflow rules do not enforce it.
+A clean clone cannot yet complete the full browser acceptance flow. Room detail, employee creation and detail, and the booking and reporting features are still in progress. Some route and business-rule tests remain to be added as those features are implemented. GitHub branch protection must be configured separately; the written workflow rules do not enforce it.
