@@ -41,7 +41,11 @@
             <tbody>
                 {% for room in rooms %}
                     <tr>
-                        <td>{{ room.name }}</td>
+                        <td>
+    <a href="{{ url_for('room_detail_page', room_id=room.id) }}">
+        {{ room.name }}
+    </a>
+</td>
                         <td>{{ room.floor }}</td>
                         <td>{{ room.capacity }}</td>
                         <td>{{ "Yes" if room.available_now else "No" }}</td>

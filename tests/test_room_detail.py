@@ -56,6 +56,13 @@ def insert_booking(client, room_id, employee_id, title, start_at, end_at,
 def test_room_detail_api_filters_and_orders_bookings_by_selected_date(client):
     room, employee = add_room_and_employee(client)
 
+    other_room_response = client.post(
+        "/api/rooms",
+        json={"name": "Other Detail Room", "floor": "3", "capacity": 4},
+    )
+    assert other_room_response.status_code == 201
+    other_room = other_room_response.get_json()["room"]
+
     # Insert the later meeting first to check that results are sorted by time.
     insert_booking(
         client, room["id"], employee["id"],
@@ -73,6 +80,10 @@ def test_room_detail_api_filters_and_orders_bookings_by_selected_date(client):
     insert_booking(
         client, room["id"], employee["id"],
         "Different date", "2026-10-05T10:00", "2026-10-05T11:00",
+    )
+    insert_booking(
+        client, other_room["id"], employee["id"],
+        "Other room meeting", "2026-10-04T09:30", "2026-10-04T10:30",
     )
 
     response = client.get(f"/api/rooms/{room['id']}?date=2026-10-04")
@@ -153,3 +164,26 @@ def test_room_detail_page_shows_empty_state_when_no_bookings(client):
 
     assert response.status_code == 200
     assert "No bookings for this date." in page
+
+def test_room_detail_page_missing_room_renders_html_error(client):
+    response = client.get("/rooms/999999")
+    page = response.get_data(as_text=True)
+
+    assert response.status_code == 404
+    assert response.mimetype == "text/html"
+    assert "Room 999999 does not exist." in page
+    assert "notice--error" in page
+
+
+def test_room_detail_page_invalid_date_renders_html_error(client):
+    room, _ = add_room_and_employee(client)
+
+    response = client.get(
+        f"/rooms/{room['id']}?date=2026-02-30"
+    )
+    page = response.get_data(as_text=True)
+
+    assert response.status_code == 400
+    assert response.mimetype == "text/html"
+    assert "Date must be a valid YYYY-MM-DD value." in page
+    assert "notice--error" in page

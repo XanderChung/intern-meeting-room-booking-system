@@ -56,6 +56,31 @@ def room_detail_api(room_id):
         date_value=request.args.get("date"),
     )
 
+@app.get("/rooms/<int:room_id>")
+def room_detail_page(room_id):
+    try:
+        details = services.get_room_for_date(
+            room_id,
+            get_db(),
+            date_value=request.args.get("date"),
+        )
+    except APIError as error:
+        flash(error.message, "error")
+
+        if error.status_code == 404:
+            details = {
+                "room": None,
+                "date": request.args.get("date", ""),
+                "bookings": [],
+            }
+        else:
+            # For an invalid date, show the room using today's date as a fallback.
+            details = services.get_room_for_date(room_id, get_db())
+
+        return render_template("room_detail.html", **details), error.status_code
+
+    return render_template("room_detail.html", **details)
+
 @app.post("/api/rooms")
 def create_room_api():
     data = request.get_json(silent=True)
@@ -103,14 +128,6 @@ def rooms_page():
     rooms = services.list_rooms(get_db())
     return render_template("rooms.html", rooms=rooms, values=values)
 
-@app.get("/rooms/<int:room_id>")
-def room_detail_page(room_id):
-    details = services.get_room_for_date(
-        room_id,
-        get_db(),
-        date_value=request.args.get("date"),
-    )
-    return render_template("room_detail.html", **details)
 
 @app.get("/api/employees")
 def list_employees_api():
