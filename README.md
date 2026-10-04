@@ -17,30 +17,30 @@ The office timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps use offic
 
 ## Setup
 
-1. Clone the repository and open the project folder.
-2. Create and activate a virtual environment:
-
-   Windows PowerShell:
-
-   ```powershell
-   py -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
-
-   macOS/Linux:
+1. Clone the repository and open its folder in VS Code.
+2. From the repository root, create a virtual environment:
 
    ```sh
    python3 -m venv .venv
+
+3. Activate it:
+For macOS/Linux use 
+   ```sh 
    source .venv/bin/activate
    ```
 
-3. Install dependencies:
+   For Windows use
+   ```sh 
+   .venv\Scripts\Activate.ps1
+   ```
+
+4. Install dependencies:
 
    ```sh
    python -m pip install -r requirements.txt
    ```
 
-If PowerShell blocks activation, use ` .\.venv\Scripts\python.exe ` in place of `python` in the commands below. Each teammate uses a local environment; do not commit `.venv`.
+Each teammate uses their own virtual enviironment. The .venv directory should be exculded from Git. 
 
 ## Environment settings
 
@@ -83,6 +83,7 @@ Available pages:
 - `/rooms`: room list, current availability, and room creation.
 - `/employees`: employee directory and employee creation.
 - `/employees/{id}`: employee details and upcoming active bookings.
+- `/rooms/{id}`: room details and bookings for a chosen date.
 - `/bookings`: booking list and filters, booking creation and cancellation, and the Top 5 rooms report.
 
 A room detail page is still pending.
@@ -107,9 +108,9 @@ $testBase = Join-Path $env:TEMP ("meeting-room-pytest-" + $PID)
   --basetemp $testBase
 ```
 
-Latest full-suite result reported by Student C on 2026-10-01: **128 passed**. This is a local test result; the repository currently has no GitHub Actions workflow runs.
+Latest full-suite result reported by Student A on 2026-10-04: **136 passed**. This is a local test result; the repository currently has no GitHub Actions workflow runs.
 
-The tests cover booking validation and concurrency, booking API and page behavior, cancellation, Top Rooms, shared API errors, timezone handling, database initialization and seeding, rooms, employees, and flash messages.
+The suite covers room and employee features, booking and ancellation rules, reports, database setup and seeding, shared API errors, and timezone behavior.
 
 ## API contract and errors
 
@@ -127,6 +128,7 @@ Implemented API operations:
 |---|---|---|
 | GET | `/api/rooms` | List rooms and current availability |
 | POST | `/api/rooms` | Create a room |
+| GET | `/api/rooms/{id}` | Return one room and its bookings for a date |
 | GET | `/api/employees` | List employees |
 | POST | `/api/employees` | Create an employee |
 | GET | `/api/employees/{id}` | Return employee details and upcoming bookings |
@@ -135,7 +137,6 @@ Implemented API operations:
 | POST | `/api/bookings/{id}/cancel` | Cancel an upcoming booking |
 | GET | `/api/reports/top-rooms` | Rank rooms by active booking count |
 
-The contract also defines `GET /api/rooms/{id}`, which is not implemented yet.
 
 ## Team responsibilities
 
@@ -151,9 +152,9 @@ The contract also defines `GET /api/rooms/{id}`, which is not implemented yet.
 |---|---|
 | Bookings and Reports (C1–C5) | Merged: booking rules, create/list/cancel APIs and page flows, and Top Rooms report |
 | Employees | Listing, creation, and detail API/pages are implemented |
-| Rooms | Listing, availability, and creation are implemented; detail API and page remain |
+| Rooms | Listing, availability, creation, and room-detail API/page are implemented and merged to main |
+| Automated tests | 136 passed in the latest reported local run; no CI workflow is configured |
 | Database | Schema, foreign keys, initialization, and repeatable sample seeding are implemented |
-| Automated tests | 128 passing in the latest local run reported above; no CI workflow is configured |
 | Final integration | The complete browser acceptance sequence and fresh-clone verification still need to be recorded |
 
 Remaining final browser checks:
@@ -168,3 +169,7 @@ Remaining final browser checks:
 8. Record the actual clicks and observed results on the merged `main`.
 
 The repository has an active `main` ruleset, but it currently does not require a pull request approval or status checks. The repository administrator should confirm and configure the agreed review protection.
+
+## Known limitations
+
+The app uses a local SQLite database and Flask’s development server; production deployment is not configured. GitHub currently does not require PR approval or status checks, so repository protection must be configured separately if the team requires it.
