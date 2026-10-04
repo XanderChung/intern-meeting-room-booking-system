@@ -87,7 +87,7 @@ def test_rooms_api_lists_rooms_and_current_availability(client, monkeypatch):
 
 
 def test_rooms_page_displays_room_details(client):
-    add_room(client)
+    room = add_room(client)
 
     response = client.get("/rooms")
     page = response.get_data(as_text=True)
@@ -97,6 +97,7 @@ def test_rooms_page_displays_room_details(client):
     assert "Capacity" in page
     assert "Available now" in page
     assert "Yes" in page
+    assert f'href="/rooms/{room["id"]}"' in page
 
 
 @pytest.mark.parametrize(
@@ -199,7 +200,7 @@ def test_rooms_form_shows_error_for_duplicate_name(client):
 
     assert response.status_code == 200
     assert "already exists" in page
-    assert page.count("<td>Boardroom</td>") == 1
+    assert page.count("Boardroom") == 1
     assert 'value="boardroom"' in page
     assert 'value="4"' in page
     assert 'value="6"' in page
