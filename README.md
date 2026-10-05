@@ -25,15 +25,16 @@ The office timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps use offic
    ```
 
 3. Activate it:
-For macOS/Linux use 
-   ```sh 
-   source .venv/bin/activate
-   ```
 
-   For Windows use
-   ```sh 
-   .venv\Scripts\Activate.ps1
-   ```
+   - **macOS/Linux:**
+     ```sh
+     source .venv/bin/activate
+     ```
+
+   - **Windows:**
+     ```powershell
+     .venv\Scripts\Activate.ps1
+     ```
 
 4. Install dependencies:
 
