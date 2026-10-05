@@ -1,6 +1,6 @@
 # Meeting Room Booking System
 
-A student team project for managing meeting rooms, employees, and room bookings. The core booking and report work (Student C, C1–C5) is merged; final integration checks and room details remain.
+A student team project for managing meeting rooms, employees, and room bookings. The core booking, employee, and room features are implemented and merged; final integration checks and fresh-clone/browser verification remain.
 
 ## Stack and architecture
 
@@ -22,17 +22,19 @@ The office timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps use offic
 
    ```sh
    python3 -m venv .venv
+   ```
 
 3. Activate it:
-For macOS/Linux use 
-   ```sh 
-   source .venv/bin/activate
-   ```
 
-   For Windows use
-   ```sh 
-   .venv\Scripts\Activate.ps1
-   ```
+   - **macOS/Linux:**
+     ```sh
+     source .venv/bin/activate
+     ```
+
+   - **Windows:**
+     ```powershell
+     .venv\Scripts\Activate.ps1
+     ```
 
 4. Install dependencies:
 
@@ -40,7 +42,7 @@ For macOS/Linux use
    python -m pip install -r requirements.txt
    ```
 
-Each teammate uses their own virtual enviironment. The .venv directory should be exculded from Git. 
+Each teammate uses their own virtual environment. The `.venv` directory should be excluded from Git. 
 
 ## Environment settings
 
@@ -86,7 +88,6 @@ Available pages:
 - `/rooms/{id}`: room details and bookings for a chosen date.
 - `/bookings`: booking list and filters, booking creation and cancellation, and the Top 5 rooms report.
 
-A room detail page is still pending.
 
 ## Run the tests
 
@@ -110,7 +111,7 @@ $testBase = Join-Path $env:TEMP ("meeting-room-pytest-" + $PID)
 
 Latest full-suite result reported by Student A on 2026-10-04: **136 passed**. This is a local test result; the repository currently has no GitHub Actions workflow runs.
 
-The suite covers room and employee features, booking and ancellation rules, reports, database setup and seeding, shared API errors, and timezone behavior.
+The suite covers room and employee features, booking and cancellation rules, reports, database setup and seeding, shared API errors, and timezone behavior.
 
 ## API contract and errors
 
