@@ -36,8 +36,16 @@
                         <tr>
                             <td>{{ booking.room_name }}</td>
                             <td>{{ booking.title }}</td>
-                            <td>{{ booking.start_at }}</td>
-                            <td>{{ booking.end_at }}</td>
+                            <td>
+                                <time datetime="{{ booking.start_at }}">
+                                    {{ booking.start_at | replace('T', ' ') }}
+                                </time>
+                            </td>
+                            <td>
+                                <time datetime="{{ booking.end_at }}">
+                                    {{ booking.end_at | replace('T', ' ') }}
+                                </time>
+                            </td>
                             <td>{{ booking.attendees }}</td>
                         </tr>
                     {% endfor %}
