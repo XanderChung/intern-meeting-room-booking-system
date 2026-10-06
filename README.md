@@ -151,7 +151,7 @@ Implemented API operations:
 
 | Area | Status |
 |---|---|
-| Bookings and Reports (C1–C5) | Merged: booking rules, create/list/cancel APIs and page flows, and Top Rooms report |
+| Bookings and Reports | Booking rules, create/list/cancel APIs and page flows, and Top Rooms report |
 | Employees | Listing, creation, and detail API/pages are implemented |
 | Rooms | Listing, availability, creation, and room-detail API/page are implemented and merged to main |
 | Automated tests | 136 passed in the latest reported local run; no CI workflow is configured |
