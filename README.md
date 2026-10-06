@@ -18,29 +18,21 @@ The office timezone is `Asia/Jakarta` (WIB, UTC+07:00). API timestamps use offic
 ## Setup
 
 1. Clone the repository and open its folder in VS Code.
-2. From the repository root, create a virtual environment:
+2. From the repository root, create the environment and install dependencies
+Each teammate needs their own virtual environment. Activation is optional: these commands use the environment’s Python directly.
 
-   ```sh
-   python3 -m venv .venv
-   ```
+Windows PowerShell:
+```sh
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+If py is unavailable, use python -m venv .venv.
 
-3. Activate it:
-
-   - **macOS/Linux:**
-     ```sh
-     source .venv/bin/activate
-     ```
-
-   - **Windows:**
-     ```powershell
-     .venv\Scripts\Activate.ps1
-     ```
-
-4. Install dependencies:
-
-   ```sh
-   python -m pip install -r requirements.txt
-   ```
+macOS/Linux:
+```sh
+python3 -m venv .venv
+./.venv/bin/python -m pip install -r requirements.txt
+```
 
 Each teammate uses their own virtual environment. The `.venv` directory should be excluded from Git. 
 
